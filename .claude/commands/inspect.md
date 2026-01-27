@@ -1,3 +1,6 @@
+---
+model: haiku
+---
 # Inspect Sheet
 
 Analyze the structure of a sheet in the active spreadsheet.

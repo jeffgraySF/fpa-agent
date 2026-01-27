@@ -1,3 +1,6 @@
+---
+model: haiku
+---
 # Explain Formula
 
 Trace and explain how a cell's value is calculated.

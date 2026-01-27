@@ -1,3 +1,6 @@
+---
+model: haiku
+---
 # Connect to Spreadsheet
 
 Switch to a different Google Spreadsheet.
