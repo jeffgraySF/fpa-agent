@@ -53,5 +53,7 @@ Allocated OpEx:    =(Dept HC / Total HC) * SUMIF('OpEx Assumptions'!$A:$A,"Overa
 3. Formulas copy/paste correctly
 4. No #REF!, #VALUE!, #ERROR!
 
-## Documentation
-After structural changes, update `INSTRUCTIONS.md` and `template_specs.md`.
+## When to Read Docs
+- **Creating new sheets or sections**: Read `template_specs.md` for standard layouts, row mappings, and formula patterns
+- **Discretionary decisions**: Read `template_specs.md` when you have flexibility on structure
+- **After structural changes**: Update `INSTRUCTIONS.md` and `template_specs.md`
