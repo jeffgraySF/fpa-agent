@@ -31,19 +31,6 @@ _ = client.read_range('Sheet', 'A1:A1')  # init workaround
 data = client.read_range('Sheet', 'A1:Z50')
 ```
 
-## Sheet Structure
-| Sheet | Purpose | Key Rows |
-|-------|---------|----------|
-| Monthly Summary | P&L, ARR waterfall, cash | Revenue r10, COGS r11, OpEx r16-21, Cash r34-35 |
-| Quarterly Summary | Same as Monthly, aggregated | SUMIF on quarter labels |
-| Headcount Input | Employee data + monthly costs | Cols A-I metadata, J+ monthly |
-| Headcount Summary | Costs by dept | HC r4-10, Salary r13-19, Total r40-46 |
-| ARR | Customer data | Start/Churn dates, monthly ARR helper |
-| ARR Summary | MRR, ARR, customer counts | MRR r4, New/Expansion/Churned r13-15 |
-| OpEx Assumptions | Non-HC expenses, scaling rules | CS COGS % in E4 (40%) |
-| Costs by Department | OpEx + COGS breakdown | Dept sections, Total OpEx r41, COGS r43-46 |
-| Cash Flow | Collections + payments | Begin r3, Burn r7, End r13 |
-
 ## Formula Standards
 - **No hardcoded labels**: Use `$A{row}` not `"G&A"` or `"Sales"`
 - **Skip headers in ranges**: Use `$B$2:$B$100` not `$B:$B`

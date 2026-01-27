@@ -3,7 +3,7 @@ model: sonnet
 ---
 # Audit Sheet
 
-Check a sheet for errors and formula standard violations per INSTRUCTIONS.md.
+Check a sheet for errors and formula standard violations.
 
 ## Instructions
 
