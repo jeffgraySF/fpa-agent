@@ -4,6 +4,7 @@ Future improvements for the FP&A Agent, inspired by Claude for Excel and user fe
 
 ## Quick Wins
 
+- [ ] **Correct NRR formula in /audit** - Fix Net Revenue Retention calculation to use correct formula
 - [ ] **Formula debugging command** - `/debug` to trace and fix broken formulas with suggested fixes
 - [ ] **Better change tracking** - Show cell-by-cell before/after with explanations in `/modify`
 - [ ] **More SaaS metrics in /audit** - Add Rule of 40, CAC Payback, LTV/CAC checks
