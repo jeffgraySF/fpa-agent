@@ -160,4 +160,4 @@ Run `/connect <url>` first, or set the `SPREADSHEET_ID` environment variable.
 
 ## License
 
-MIT
+Apache 2.0 - See [LICENSE](LICENSE)
