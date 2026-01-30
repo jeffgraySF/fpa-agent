@@ -16,7 +16,7 @@ Examples:
 
 ## Instructions
 
-This is a two-phase process. Phase 1 is read-only discovery. Phase 2 builds sheets only after user confirmation.
+This is a three-phase process. Phase 1 is read-only discovery. Phase 2 builds sheets with incremental verification after each step. Phase 3 is a full audit.
 
 ---
 
@@ -56,7 +56,9 @@ Supplement with `read_range()` for additional rows if `/inspect` doesn't cover e
 
 #### 1.3 Analyze Each Source
 
-Using the `/inspect` output, determine for each input source:
+Using the `/inspect` output, determine for each input source.
+
+**For every mapped column, note its data type** (date, currency, percentage, text, number). This is critical for Phase 2 — dates must be written as `=DATE()` formulas, not text strings. Currency must be numeric, not formatted strings like "$100,000".
 
 **ARR Data — look for:**
 - Customer/account name
@@ -131,6 +133,11 @@ Found: [N] expense line items
 ## Planning Horizon
 Proposed: [start month] - [end month] (24 months)
 
+## Actuals vs. Forecast Boundary
+- **Actuals period**: [start] - [end] (months with real data in P&L)
+- **Forecast period**: [start] - [end] (projected months)
+- Cash balance anchors to [date]: $[X] (end of actuals period)
+
 ## Information Needed
 - Starting cash balance: $[X] from balance sheet [or: ask user if no balance sheet provided]
 - Payment terms: 40/40/20 at 30/60/90 days [confirm or adjust]
@@ -138,6 +145,11 @@ Proposed: [start month] - [end month] (24 months)
 - CS COGS split %: 40% [confirm or adjust]
 - Benefits % of salary: 20% [confirm or adjust, if not in data]
 - [Any other missing data]
+
+## After Build: Input Tabs
+The original input tabs ([list names]) will remain in the spreadsheet. After confirming the model is correct, you can:
+- **Hide** them (right-click tab → Hide sheet) to keep them as reference
+- **Delete** them if no longer needed
 
 Proceed with this mapping?
 ```
@@ -154,14 +166,24 @@ Only proceed after user confirmation of the mapping.
 
 If building in the same spreadsheet, create new sheets. If the user wants a new spreadsheet, ask for the URL.
 
+Check for sheet name collisions before creating. If an input tab has the same name as a planned output tab (e.g., "Services"), rename the output tab (e.g., "Services Summary") to avoid conflicts.
+
 Create sheets using `batch_update`:
 ```python
 client.batch_update([{"addSheet": {"properties": {"title": "Sheet Name"}}}])
 ```
 
-#### 2.2 Build Order (dependency order)
+#### 2.2 Build Monthly Summary Date Row First
 
-Build sheets in this order — each depends on the ones before it:
+Before building any other sheet, create Monthly Summary with row 1 (quarter labels) and row 2 (date headers). This is the **single source of truth** for dates:
+- C2: `=DATE(2026,1,31)` (adjust to planning horizon start)
+- D2+: `=EOMONTH(C2+1,0)`
+
+All other sheets must reference `='Monthly Summary'!{col}$2` for their date headers. Never write standalone date values or date strings in other sheets.
+
+#### 2.3 Build Order (dependency order)
+
+Build sheets in this order — each depends on the ones before it. **After each step, run `/inspect [sheet] errors` to catch problems before they cascade.**
 
 **Step 1: Headcount Input**
 - Create the sheet with columns: Name, Department, Title, Start Date, End Date, Base Salary, Bonus, Commission, Benefits
@@ -237,7 +259,8 @@ Build sheets in this order — each depends on the ones before it:
 
 **Step 7: Cash Flow**
 - Rows: Beginning Cash, Cash Collections, Operating Cash Out, Operating Cash Burn, Interest, Other, Total Cash Change, Ending Cash
-- Beginning Cash: user-provided starting cash for first month, then previous Ending Cash
+- **Beginning Cash must anchor to the correct date.** If the user provides a cash balance as of 12/31/2025, that balance corresponds to the *end* of December 2025, not the beginning of January 2025. Set the Beginning Cash for **January 2026** (or the first forecast month) to the provided balance. Do NOT set January 2025 to that value if the model includes 2025 actuals — the cash will be wrong for every month.
+- For forecast months: Beginning Cash = previous month's Ending Cash
 - Collections: `=MRR[month]*0.4 + MRR[month-1]*0.4 + MRR[month-2]*0.2` (using confirmed payment terms)
 - Operating Cash Out: Total Expenses from Costs by Department
 - Ending Cash: Beginning + Total Cash Change
@@ -258,7 +281,33 @@ Build sheets in this order — each depends on the ones before it:
   - Last-month rows (Ending ARR, Ending Cash): last month of quarter
   - Average rows (margins): `=AVERAGE(...)` of months in quarter
 
-#### 2.3 Formula Standards (apply everywhere)
+#### 2.4 Test Before Bulk Write
+
+For any complex formula (proration, SUMPRODUCT, nested IF), **test it on one cell first**:
+
+1. Write the formula to a single cell (e.g., the first data row, first month column)
+2. Read back the calculated value
+3. Verify it is not an error (#ERROR!, #REF!, #VALUE!, etc.)
+4. Verify the value makes sense (e.g., a monthly salary should be ~1/12 of annual)
+5. Only then apply the formula to all remaining rows/columns
+
+If the test cell errors, debug and fix before proceeding. This prevents writing hundreds of broken formulas that cascade errors through downstream sheets.
+
+#### 2.5 Verify After Each Sheet
+
+After building each sheet, run `/inspect [sheet] errors` to scan for formula errors. If any errors are found:
+- Fix them immediately before building the next sheet
+- Re-scan after fixing to confirm zero errors
+
+Also run a **sanity check** appropriate to the sheet:
+- **Headcount Input**: Verify total HC count roughly matches number of input rows
+- **ARR Model**: Verify ARR amounts match source data
+- **Headcount Summary**: Verify total HC > 0 for months with active employees
+- **OpEx Assumptions**: Verify fixed amounts match expected averages
+- **Costs by Department**: Verify total expenses > 0 for active months
+- **Cash Flow**: Verify ending cash is in a reasonable range (positive or expected negative)
+
+#### 2.6 Formula Standards (apply everywhere)
 
 Follow these rules from CLAUDE.md in ALL formulas:
 - **No hardcoded labels**: Use `$A{row}` not `"G&A"` or `"Sales"`
@@ -267,16 +316,39 @@ Follow these rules from CLAUDE.md in ALL formulas:
 - **Department ref**: `$A{row}` (absolute col, relative row)
 - **Month ref**: `{col}$1` (relative col, absolute row)
 
-#### 2.4 Date Headers
+#### 2.7 Data Type Rules
 
-Monthly Summary row 2 is the master date row. All other sheets reference it:
+Enforce proper types when writing data. Never write formatted strings.
+
+- **Dates**: Always use `=DATE(year,month,day)` formulas. Never write text like "8/1/25" or "2025-08-01"
+- **Currency**: Write as numeric values (175000), not formatted strings ("$175,000")
+- **Percentages**: Write as decimals (0.15), not text ("15%")
+- **Date headers**: All sheets reference `='Monthly Summary'!{col}$2`. Never write standalone date values in other sheets.
+
+#### 2.8 Number Formatting
+
+After writing data and formulas to each sheet, apply number formats so the output is readable without manual formatting:
+
+- **Currency cells** (revenue, expenses, cash, salaries, ARR): Format as `$#,##0` or `$#,##0.00`
+- **Percentage cells** (margins, growth rates, NRR): Format as `0.0%`
+- **Date cells** (headers, start/end dates): Format as `M/D/YYYY`
+- **Integer cells** (headcount, customer counts): Format as `#,##0`
+- **Header rows**: Bold, with bottom border
+
+Use the Sheets API `repeatCell` or `updateCells` request to apply formats:
+```python
+client.batch_update([{
+    "repeatCell": {
+        "range": {"sheetId": sheet_id, "startRowIndex": r1, "endRowIndex": r2, "startColumnIndex": c1, "endColumnIndex": c2},
+        "cell": {"userEnteredFormat": {"numberFormat": {"type": "CURRENCY", "pattern": "$#,##0"}}},
+        "fields": "userEnteredFormat.numberFormat"
+    }
+}])
 ```
-='Monthly Summary'!C$2
-```
 
-Adjust the starting date based on the user's data or confirmed planning horizon.
+Apply formatting after each sheet is built and verified, not as a separate pass at the end.
 
-#### 2.5 Freeze Panes
+#### 2.9 Freeze Panes
 
 After building each sheet, freeze the label columns and header rows:
 ```python
@@ -285,17 +357,37 @@ client.set_freeze('Sheet Name', rows=2, columns=2)  # Adjust per sheet
 
 ---
 
-### Phase 3: Verify
+### Phase 3: Final Audit
 
-After building all sheets, run `/audit all` on the new spreadsheet to check the work.
+By this point, each sheet should already be error-free (from step 2.5 incremental checks). The final audit catches cross-sheet issues and FP&A logic problems that only appear when the full model is wired together.
 
-This will:
-- Identify any formula errors (#REF!, #VALUE!, etc.)
-- Assess FP&A accuracy (ARR waterfall, P&L, margins)
-- Flag anything that doesn't follow best practices
-- Provide specific suggestions for fixes
+Run `/audit all` on the new spreadsheet to check:
+- Formula errors (#REF!, #VALUE!, etc.) — should be zero if step 2.5 was followed
+- Cross-sheet reference integrity (do all sheets agree on totals?)
+- FP&A accuracy (ARR waterfall, P&L, margins, cash reconciliation)
+- Formula standard violations (hardcoded labels, whole-column refs, etc.)
 
-Fix any issues `/audit` finds before reporting completion to the user.
+#### 3.1 Reconciliation Checks
+
+After the audit, verify that key model outputs tie to known input values. These are hard checks — if they don't match, something is wrong.
+
+**Cash reconciliation**: If the user provided a cash balance as of a specific date, the model's Ending Cash for that month MUST equal the provided balance. Read the Ending Cash value for that month and compare. If they don't match, trace the discrepancy.
+
+**Headcount reconciliation**: Total headcount in the model for recent months should match the number of active employees in the input data. Count employees with start dates before the month and no end date (or end date after the month).
+
+**ARR reconciliation**: Total ARR in the model should match the sum of active ARR records from the input data for any given month.
+
+**Revenue reconciliation**: If the P&L source has actual monthly revenue data, compare the model's revenue for those months to the actuals. Flag any discrepancies.
+
+Report reconciliation results:
+```
+## Reconciliation
+- Cash ($[date]): Model $[X] vs. Input $[Y] — [MATCH / MISMATCH by $Z]
+- Headcount ([month]): Model [N] vs. Input [M] — [MATCH / MISMATCH]
+- ARR ([month]): Model $[X] vs. Input $[Y] — [MATCH / MISMATCH]
+```
+
+Fix any issues `/audit` or reconciliation finds before reporting completion to the user.
 
 Report the final result:
 ```
