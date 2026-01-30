@@ -120,7 +120,41 @@ This prevents writing hundreds of broken formulas that cascade errors through do
 
 ## Reconciliation Checks
 
-After building or modifying a model, verify that key outputs tie to known input values. Run these checks whenever a change could affect cash, headcount, ARR, or revenue totals.
+After any change to a model, run reconciliation checks to verify key outputs still tie to known input values. Use the tiered approach below to balance thoroughness with token cost.
+
+### Tier 1 — Skip
+
+No reconciliation needed for cosmetic changes: formatting, bold, colors, column widths, labels that don't affect formulas.
+
+### Tier 2 — Spot Check
+
+For single-sheet formula fixes or value updates. Read **one cell** per relevant check and compare to the known baseline. Costs 1-2 API reads total.
+
+Example: after fixing a formula in Costs by Department, read Ending Cash for Dec 2025 and compare to $5.91M. If it matches, done.
+
+### Tier 3 — Full Reconciliation
+
+For structural changes (add/remove rows/columns), bulk formula rewrites, or changes that touch multiple sheets. Run all relevant checks across multiple months.
+
+### Which Checks to Run
+
+Use the Model Structure dependency graph to scope checks to what's actually affected:
+
+| Modified sheet | Check HC | Check ARR | Check Cash | Check Revenue |
+|---|---|---|---|---|
+| Headcount Input | yes | | yes | |
+| ARR | | yes | yes | |
+| Services | | | yes | yes |
+| OpEx Assumptions | | | yes | |
+| Costs by Department | | | yes | |
+| Cash Flow | | | yes | |
+| Headcount Summary | yes | | yes | |
+| ARR Summary | | yes | yes | |
+| Monthly / Quarterly Summary | | | | |
+
+Changes to Monthly or Quarterly Summary are downstream endpoints — nothing to reconcile.
+
+### Check Definitions
 
 **Cash**: If a known cash balance exists (e.g., from a balance sheet), the model's Ending Cash for that month MUST equal the provided balance. Read the Ending Cash value and compare. If they don't match, trace the discrepancy.
 
@@ -130,9 +164,9 @@ After building or modifying a model, verify that key outputs tie to known input 
 
 **Revenue**: If actual monthly revenue data exists (e.g., from a P&L), compare the model's revenue for those months to the actuals. Flag any discrepancies.
 
-Report format:
+### Report Format
 ```
-## Reconciliation
+## Reconciliation ([tier])
 - Cash ($[date]): Model $[X] vs. Input $[Y] — [MATCH / MISMATCH by $Z]
 - Headcount ([month]): Model [N] vs. Input [M] — [MATCH / MISMATCH]
 - ARR ([month]): Model $[X] vs. Input $[Y] — [MATCH / MISMATCH]

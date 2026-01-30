@@ -150,9 +150,13 @@ After verification, run `/audit` on the modified sheet to check for formula stan
 
 ### 8. Reconciliation
 
-If the modification changed formulas or values that affect cash, headcount, ARR, or revenue totals, run the **Reconciliation Checks** from CLAUDE.md. This catches cases where a formula fix or structural change inadvertently breaks a total that should tie to known input data.
+Run the **Reconciliation Checks** from CLAUDE.md using the appropriate tier:
 
-Skip this step for cosmetic changes (formatting, labels, column headers) that don't affect calculated values.
+- **Tier 1 (skip)**: Cosmetic changes — formatting, labels, column headers
+- **Tier 2 (spot check)**: Single-sheet formula fix or value update — read one downstream cell per relevant check
+- **Tier 3 (full)**: Structural changes (add/remove rows/columns), bulk formula rewrites, multi-sheet changes
+
+Use the dependency table in CLAUDE.md to determine which checks (HC, ARR, Cash, Revenue) apply based on the sheet you modified.
 
 ### 9. Output Format
 
