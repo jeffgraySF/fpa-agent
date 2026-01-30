@@ -3,15 +3,15 @@ model: sonnet
 ---
 # Create FP&A Model
 
-Build a complete FP&A model from user-provided input data (ARR, headcount, COA/P&L). Input formats will vary — discover the structure, propose a mapping, and get user confirmation before building.
+Build a complete FP&A model from user-provided input data (ARR, headcount, COA/P&L, and optionally a balance sheet for starting cash). Input formats will vary — discover the structure, propose a mapping, and get user confirmation before building.
 
 ## Arguments
 
-$ARGUMENTS - Natural language describing the 3 input sources (sheet names, URLs, or file paths for ARR data, headcount data, and chart of accounts/P&L data)
+$ARGUMENTS - Natural language describing input sources (sheet names, URLs, or file paths for ARR data, headcount data, chart of accounts/P&L data, and optionally balance sheet data)
 
 Examples:
 - `/create ARR is in "Revenue" sheet, headcount in "Team" sheet, expenses in "Budget" sheet`
-- `/create revenue data in Sheet1, employees in Sheet2, P&L in Sheet3`
+- `/create revenue data in Sheet1, employees in Sheet2, P&L in Sheet3, balance sheet in Sheet4`
 - `/create ARR from the "Deals" tab, HC from "Employees" tab, and COA from "GL Detail" tab`
 
 ## Instructions
@@ -24,12 +24,15 @@ This is a two-phase process. Phase 1 is read-only discovery. Phase 2 builds shee
 
 #### 1.1 Parse Input Sources
 
-From `$ARGUMENTS`, identify the 3 input sources:
-- **ARR / Revenue data**: Customer bookings, deals, subscriptions
-- **Headcount data**: Employees, team members, salaries
-- **COA / P&L / Expense data**: Chart of accounts, budget, expense line items
+From `$ARGUMENTS`, identify input sources:
+- **ARR / Revenue data** (required): Customer bookings, deals, subscriptions
+- **Headcount data** (required): Employees, team members, salaries
+- **COA / P&L / Expense data** (required): Chart of accounts, budget, expense line items
+- **Balance sheet data** (optional): Cash balances, assets, liabilities — used to extract starting cash
 
-If arguments are missing or unclear, ask the user to clarify. All 3 sources are required.
+If the first 3 sources are missing or unclear, ask the user to clarify. All 3 are required.
+
+If no balance sheet is provided, ask the user for starting cash during the mapping proposal (step 1.4). If a balance sheet IS provided, extract starting cash from it automatically.
 
 #### 1.2 Connect and Inspect
 
@@ -81,6 +84,12 @@ Using the `/inspect` output, determine for each input source:
 - Which items are COGS vs OpEx
 - Scaling type (fixed, per-HC, % of revenue)
 
+**Balance Sheet Data (if provided) — look for:**
+- Cash and cash equivalents (most recent period)
+- Total assets / total liabilities (for context)
+- Date of the balance sheet (to align with planning horizon start)
+- Extract the cash balance to use as Starting Cash in the Cash Flow sheet
+
 #### 1.4 Present Mapping Proposal
 
 Present a detailed mapping proposal to the user. Use this format:
@@ -115,11 +124,15 @@ Found: [N] expense line items
   [Flag items that need classification as COGS vs OpEx]
   [Flag items that need a scaling type assumption]
 
+### Balance Sheet (from "[source name]") — if provided
+  Cash & cash equivalents: $[X] as of [date]
+  [Any other relevant context]
+
 ## Planning Horizon
 Proposed: [start month] - [end month] (24 months)
 
 ## Information Needed
-- Starting cash balance: [ask user]
+- Starting cash balance: $[X] from balance sheet [or: ask user if no balance sheet provided]
 - Payment terms: 40/40/20 at 30/60/90 days [confirm or adjust]
 - Hosting % of revenue: 15% [confirm or adjust]
 - CS COGS split %: 40% [confirm or adjust]
