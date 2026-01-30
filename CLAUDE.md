@@ -54,6 +54,26 @@ Allocated OpEx:    =(Dept HC / Total HC) * SUMIF('OpEx Assumptions'!$A:$A,"Overa
 3. Formulas copy/paste correctly
 4. No #REF!, #VALUE!, #ERROR!
 
+## Reconciliation Checks
+
+After building or modifying a model, verify that key outputs tie to known input values. Run these checks whenever a change could affect cash, headcount, ARR, or revenue totals.
+
+**Cash**: If a known cash balance exists (e.g., from a balance sheet), the model's Ending Cash for that month MUST equal the provided balance. Read the Ending Cash value and compare. If they don't match, trace the discrepancy.
+
+**Headcount**: Total headcount in the model for recent months should match the number of active employees in the input data. Count employees with start dates before the month and no end date (or end date after the month). Note: rows with $0 total compensation (e.g., variable comp placeholders) are correctly excluded from HC count formulas that use `>0` checks.
+
+**ARR**: Total ARR in the model should match the sum of active ARR records from the input data for any given month.
+
+**Revenue**: If actual monthly revenue data exists (e.g., from a P&L), compare the model's revenue for those months to the actuals. Flag any discrepancies.
+
+Report format:
+```
+## Reconciliation
+- Cash ($[date]): Model $[X] vs. Input $[Y] — [MATCH / MISMATCH by $Z]
+- Headcount ([month]): Model [N] vs. Input [M] — [MATCH / MISMATCH]
+- ARR ([month]): Model $[X] vs. Input $[Y] — [MATCH / MISMATCH]
+```
+
 ## When to Read Docs
 - **Creating new sheets or sections**: Read `template_specs.md` for standard layouts, row mappings, and formula patterns
 - **Discretionary decisions**: Read `template_specs.md` when you have flexibility on structure

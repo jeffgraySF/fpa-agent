@@ -369,25 +369,7 @@ Run `/audit all` on the new spreadsheet to check:
 
 #### 3.1 Reconciliation Checks
 
-After the audit, verify that key model outputs tie to known input values. These are hard checks — if they don't match, something is wrong.
-
-**Cash reconciliation**: If the user provided a cash balance as of a specific date, the model's Ending Cash for that month MUST equal the provided balance. Read the Ending Cash value for that month and compare. If they don't match, trace the discrepancy.
-
-**Headcount reconciliation**: Total headcount in the model for recent months should match the number of active employees in the input data. Count employees with start dates before the month and no end date (or end date after the month).
-
-**ARR reconciliation**: Total ARR in the model should match the sum of active ARR records from the input data for any given month.
-
-**Revenue reconciliation**: If the P&L source has actual monthly revenue data, compare the model's revenue for those months to the actuals. Flag any discrepancies.
-
-Report reconciliation results:
-```
-## Reconciliation
-- Cash ($[date]): Model $[X] vs. Input $[Y] — [MATCH / MISMATCH by $Z]
-- Headcount ([month]): Model [N] vs. Input [M] — [MATCH / MISMATCH]
-- ARR ([month]): Model $[X] vs. Input $[Y] — [MATCH / MISMATCH]
-```
-
-Fix any issues `/audit` or reconciliation finds before reporting completion to the user.
+Run the **Reconciliation Checks** from CLAUDE.md. These verify that cash, headcount, ARR, and revenue in the model tie to the known input values. Fix any mismatches before reporting completion.
 
 Report the final result:
 ```

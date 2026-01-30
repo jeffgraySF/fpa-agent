@@ -146,7 +146,13 @@ After verification, run `/audit` on the modified sheet to check for formula stan
 - If `/audit` finds pre-existing issues unrelated to your changes, report them in the Notes section but do not fix them (the user didn't ask for that)
 - Include the audit result summary in your output
 
-### 8. Output Format
+### 8. Reconciliation
+
+If the modification changed formulas or values that affect cash, headcount, ARR, or revenue totals, run the **Reconciliation Checks** from CLAUDE.md. This catches cases where a formula fix or structural change inadvertently breaks a total that should tie to known input data.
+
+Skip this step for cosmetic changes (formatting, labels, column headers) that don't affect calculated values.
+
+### 9. Output Format
 
 ```
 ## Modification Complete
@@ -166,6 +172,8 @@ After verification, run `/audit` on the modified sheet to check for formula stan
 - [x] Cross-sheet references intact
 
 **Audit result**: [summary from /audit — "All checks passed" or list of issues found and whether they were fixed]
+
+**Reconciliation**: [if applicable — summary from reconciliation checks, or "N/A — cosmetic change only"]
 
 **Notes**:
 [Any follow-up actions needed, e.g., "You may want to update Quarterly Summary to include this new row"]
