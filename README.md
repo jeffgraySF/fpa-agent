@@ -1,11 +1,12 @@
 # FP&A Agent
 
-Google Sheets automation for financial planning using Claude Code.
+Google Sheets automation for financial planning using Claude Code. Designed for early-stage SaaS companies.
 
 ## What It Does
 
-An AI agent that can read, analyze, and modify financial planning spreadsheets. Built for FP&A workflows like:
+An AI agent that can build, read, analyze, and modify financial planning spreadsheets. Built for FP&A workflows like:
 
+- **Creating** a full FP&A model from raw data (ARR, headcount, P&L, balance sheet)
 - **Inspecting** sheet structure and formula patterns
 - **Auditing** for errors and FP&A best practices
 - **Explaining** how complex formulas work
@@ -16,6 +17,7 @@ An AI agent that can read, analyze, and modify financial planning spreadsheets. 
 | Command | Description |
 |---------|-------------|
 | `/connect` | Connect to a Google Spreadsheet |
+| `/create` | Build a full FP&A model from input data |
 | `/inspect` | Analyze sheet structure (formulas, refs, errors) |
 | `/audit` | Check for errors and FP&A best practices |
 | `/explain` | Trace and explain how a cell's value is calculated |
@@ -96,6 +98,9 @@ You'll see the welcome message with available commands.
 # Explain a formula
 /explain Monthly!B15
 
+# Build a model from raw data
+/create ARR in "Deals" sheet, headcount in "Team" sheet, expenses in "Budget" sheet
+
 # Modify a sheet
 /modify add a new department row for "Product" below Engineering
 ```
@@ -116,6 +121,7 @@ fpa-agent/
     └── commands/          # Slash command definitions
         ├── audit.md
         ├── connect.md
+        ├── create.md
         ├── explain.md
         ├── inspect.md
         └── modify.md

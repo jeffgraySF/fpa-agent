@@ -10,6 +10,7 @@ FP&A Agent - Google Sheets automation for financial planning
 
 Available commands:
   /connect  - Connect to a spreadsheet
+  /create   - Build a full FP&A model from input data
   /inspect  - Inspect sheet structure and data
   /modify   - Modify sheet formulas or data
   /explain  - Explain a formula
@@ -57,3 +58,12 @@ Allocated OpEx:    =(Dept HC / Total HC) * SUMIF('OpEx Assumptions'!$A:$A,"Overa
 - **Creating new sheets or sections**: Read `template_specs.md` for standard layouts, row mappings, and formula patterns
 - **Discretionary decisions**: Read `template_specs.md` when you have flexibility on structure
 - **After structural changes**: Update `INSTRUCTIONS.md` and `template_specs.md`
+
+## When to Update README
+After making changes, check if `README.md` needs updating. Update it when:
+- A new command is added or an existing command's purpose changes
+- The setup process changes (new dependencies, new config steps)
+- The project structure changes (new directories, renamed files)
+- User-facing behavior changes significantly
+
+Don't update README for internal-only changes (formula tweaks, prompt wording, bug fixes).
