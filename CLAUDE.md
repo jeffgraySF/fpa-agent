@@ -138,21 +138,29 @@ For structural changes (add/remove rows/columns), bulk formula rewrites, or chan
 
 ### Which Checks to Run
 
-Use the Model Structure dependency graph to scope checks to what's actually affected:
+Determine which checks are relevant by tracing what the modified sheet feeds into. Don't rely on sheet names — use the actual cross-sheet references.
 
-| Modified sheet | Check HC | Check ARR | Check Cash | Check Revenue |
-|---|---|---|---|---|
-| Headcount Input | yes | | yes | |
-| ARR | | yes | yes | |
-| Services | | | yes | yes |
-| OpEx Assumptions | | | yes | |
-| Costs by Department | | | yes | |
-| Cash Flow | | | yes | |
-| Headcount Summary | yes | | yes | |
-| ARR Summary | | yes | yes | |
-| Monthly / Quarterly Summary | | | | |
+**How to determine scope:**
+1. Run `/inspect [modified sheet] refs` to find which other sheets reference it
+2. Follow the chain downstream: if Sheet A feeds Sheet B which feeds Cash Flow, a change to A affects cash
+3. Map the downstream impact to check categories:
+   - Feeds into anything that calculates **headcount totals** → check HC
+   - Feeds into anything that calculates **ARR/MRR** → check ARR
+   - Feeds into anything that calculates **cash balances** → check Cash
+   - Feeds into anything that calculates **revenue** → check Revenue
+4. If the modified sheet is a downstream endpoint (nothing references it), skip reconciliation
 
-Changes to Monthly or Quarterly Summary are downstream endpoints — nothing to reconcile.
+**Standard model example** (for reference — actual models may differ):
+
+| Sheet | Typically affects |
+|---|---|
+| Headcount Input | HC, Cash |
+| ARR | ARR, Cash |
+| Services | Revenue, Cash |
+| OpEx Assumptions | Cash |
+| Costs by Department | Cash |
+| Cash Flow | Cash |
+| Monthly / Quarterly Summary | Nothing (endpoint) |
 
 ### Check Definitions
 
