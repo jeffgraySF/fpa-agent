@@ -103,6 +103,7 @@ For cash/balance sheets, check for:
 **Standard Violations:**
 1. [Cell]: [Issue description]
    - **Fix**: [Suggested fix]
+   - **Command**: `/modify [description of the fix to apply]`
 
 ---
 
@@ -127,4 +128,31 @@ For cash/balance sheets, check for:
 2. [...]
 
 **Bottom line**: [One sentence overall assessment]
+```
+
+### 6. Actionable Fix Commands
+
+For every issue found, include a ready-to-run `/modify` command that would fix it. This lets the user copy-paste the command directly to resolve issues.
+
+Format each fix as:
+```
+/modify [natural language description of the exact fix]
+```
+
+Examples:
+- `/modify fix B15 to use $A15 instead of hardcoded "G&A"`
+- `/modify update SUMIF ranges in row 20 to use $B$2:$B$100 instead of $B:$B`
+- `/modify replace hardcoded value 1572600 in C8 with reference to ARR!D2`
+
+If multiple issues share the same root cause, group them into a single `/modify` command:
+- `/modify update all SUMIF formulas in rows 10-18 to skip headers by using $B$2:$B$100 instead of $B:$B`
+
+At the end of the report, collect all fix commands in a summary section:
+```
+### Quick Fixes
+
+Run these commands to resolve the issues above:
+
+1. `/modify [fix 1]`
+2. `/modify [fix 2]`
 ```

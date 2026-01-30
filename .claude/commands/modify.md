@@ -137,7 +137,16 @@ After making changes:
 - Clear formatting from deleted column positions
 - Update formatting on remaining columns if needed (e.g., remove shading from quarterly columns that inherited annual column formatting)
 
-### 7. Output Format
+### 7. Post-Modification Audit
+
+After verification, run `/audit` on the modified sheet to check for formula standard violations and FP&A best practices. This catches issues beyond simple errors — hardcoded labels, fragile references, whole-column ranges, and missing calculations that the basic verification step won't find.
+
+- Run `/audit [sheet name]` on the sheet you modified
+- If `/audit` finds issues introduced by your changes, fix them immediately
+- If `/audit` finds pre-existing issues unrelated to your changes, report them in the Notes section but do not fix them (the user didn't ask for that)
+- Include the audit result summary in your output
+
+### 8. Output Format
 
 ```
 ## Modification Complete
@@ -155,6 +164,8 @@ After making changes:
 - [x] No errors introduced
 - [x] Formulas calculating correctly
 - [x] Cross-sheet references intact
+
+**Audit result**: [summary from /audit — "All checks passed" or list of issues found and whether they were fixed]
 
 **Notes**:
 [Any follow-up actions needed, e.g., "You may want to update Quarterly Summary to include this new row"]

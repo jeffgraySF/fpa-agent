@@ -31,9 +31,9 @@ From `$ARGUMENTS`, identify the 3 input sources:
 
 If arguments are missing or unclear, ask the user to clarify. All 3 sources are required.
 
-#### 1.2 Connect and Read
+#### 1.2 Connect and Inspect
 
-Connect to the spreadsheet from CLAUDE.md. For each input source:
+Connect to the spreadsheet from CLAUDE.md, then use `/inspect` to analyze each input source:
 
 ```python
 from src.sheets.client import SheetsClient
@@ -41,11 +41,19 @@ client = SheetsClient('<spreadsheet_id_or_url>')
 _ = client.read_range('Sheet', 'A1:A1')  # init workaround
 ```
 
-Use `inspect_sheet()` or `read_range()` to read headers and sample data from each source. Read enough rows to understand the full schema (at least 20 rows, more if the data is large).
+For each input source sheet, run these `/inspect` modes to understand its structure:
+- `/inspect [sheet]` — Full structure analysis (row labels, formula patterns, data vs header rows)
+- `/inspect [sheet] formulas` — Identify formula patterns (which rows are calculated vs static data)
+- `/inspect [sheet] refs` — Find cross-sheet references (understand existing relationships)
+- `/inspect [sheet] errors` — Pre-check for errors in source data
+
+This reuses `/inspect`'s reading strategy (Column A fully, first data column fully, sample columns) and gives you structured metadata about each source rather than raw reads.
+
+Supplement with `read_range()` for additional rows if `/inspect` doesn't cover enough data to determine the schema.
 
 #### 1.3 Analyze Each Source
 
-For each input source, determine:
+Using the `/inspect` output, determine for each input source:
 
 **ARR Data — look for:**
 - Customer/account name

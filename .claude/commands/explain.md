@@ -11,12 +11,20 @@ $ARGUMENTS - Cell reference like "Monthly Summary!C12" or a Google Sheets URL wi
 
 ## Instructions
 
-### 1. Gather Context First
+### 1. Gather Context with /inspect
 
-Before interpreting the formula, read:
+Start by using `/inspect` to get structural context and trace the dependency tree:
+
+1. Run `/inspect [sheet] trace [cell]` on the target cell to get its precedent tree (upstream dependencies)
+2. Run `/inspect [sheet] rows [row]` on the target row to see all formulas and values across columns
+
+This gives you the dependency tree, cross-sheet references, and formula patterns without reimplementing that logic.
+
+### 2. Read Additional Context
+
+Supplement the `/inspect` results with FP&A-specific context:
 - **Column headers** for all referenced columns (row 1 or 2) to understand what each input represents
 - **Row label** (column A) for the cell's row to understand what's being calculated
-- **Sheet name** for context on the sheet's purpose
 - **Sample values** in referenced cells to see real data
 
 This context is critical. A formula like `=C55 + D55` means completely different things depending on headers:
@@ -24,21 +32,15 @@ This context is critical. A formula like `=C55 + D55` means completely different
 - If C = "Base Salary" and D = "Bonus" → Total compensation
 - If C = "Q1" and D = "Q2" → Summing quarters
 
-### 2. Read the Formula
+### 3. Use the Dependency Tree
 
-Get the formula and its current calculated value.
-
-### 3. Trace Dependencies
-
-For each referenced cell:
-- Read its value AND its formula (if any)
-- Read its column header to understand what it represents
-- If it references other sheets, follow those references
-- Build a dependency tree (3 levels max unless deeper is needed)
+The `/inspect trace` output provides the dependency tree. Build on it:
 
 For INDEX/MATCH, VLOOKUP, SUMIF patterns:
 - Identify what's being looked up and from where
 - Note the source sheet and what data it contains
+
+If the trace wasn't deep enough (more than 3 levels needed), follow additional references manually.
 
 ### 4. Interpret with FP&A Context
 
