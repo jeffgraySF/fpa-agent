@@ -12,6 +12,7 @@ Future improvements for the FP&A Agent, inspired by Claude for Excel and user fe
 
 ## Medium Effort
 
+- [ ] **Actuals vs. Forecast boundary** - Explicit handling across all commands. `/create` should mark which months are actuals vs forecast (e.g., shading, "Act"/"Fcst" labels). `/audit` should not flag hardcoded values in actuals months. `/modify` should warn before overwriting actuals with formulas. `/inspect` should report the boundary. Consider storing the boundary date in a named range or dedicated cell so all sheets can reference it.
 - [ ] **Scenario analysis** - Add sensitivity tables, scenario toggles to existing models
 - [ ] **Variance analysis** - `/variance` command to compare actuals vs budget/forecast
 - [ ] **Pre-built templates** - `/create dcf`, `/create comp-analysis`, `/create arr-waterfall`

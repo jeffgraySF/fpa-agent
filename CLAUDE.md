@@ -48,6 +48,70 @@ CS COGS split:     =CS_Subtotal * 'OpEx Assumptions'!$E$4
 Allocated OpEx:    =(Dept HC / Total HC) * SUMIF('OpEx Assumptions'!$A:$A,"Overall",month_col)
 ```
 
+## Data Type Rules
+
+When writing data to sheets, enforce proper types. Never write formatted strings.
+
+- **Dates**: Always use `=DATE(year,month,day)` formulas. Never write text like "8/1/25" or "2025-08-01" — text dates break date comparisons in formulas.
+- **Currency**: Write as numeric values (175000), not formatted strings ("$175,000")
+- **Percentages**: Write as decimals (0.15), not text ("15%")
+- **Date headers**: All sheets reference `='Monthly Summary'!{col}$2`. Never write standalone date values in other sheets.
+
+## Number Formatting
+
+When writing data to sheets, apply number formats so output is readable without manual formatting:
+
+- **Currency cells** (revenue, expenses, cash, salaries, ARR): `$#,##0`
+- **Percentage cells** (margins, growth rates, NRR): `0.0%`
+- **Date cells** (headers, start/end dates): `M/D/YYYY`
+- **Integer cells** (headcount, customer counts): `#,##0`
+- **Header rows**: Bold
+
+```python
+client.batch_update([{
+    "repeatCell": {
+        "range": {"sheetId": sheet_id, "startRowIndex": r1, "endRowIndex": r2, "startColumnIndex": c1, "endColumnIndex": c2},
+        "cell": {"userEnteredFormat": {"numberFormat": {"type": "CURRENCY", "pattern": "$#,##0"}}},
+        "fields": "userEnteredFormat.numberFormat"
+    }
+}])
+```
+
+## Model Structure
+
+Standard FP&A model sheets and their dependencies. Use this to understand downstream impact when modifying, auditing, or explaining formulas.
+
+```
+Headcount Input ──┐
+                   ├─→ Headcount Summary ──┐
+ARR ───────────────┤                       ├─→ Costs by Department ──┐
+                   ├─→ ARR Summary ────────┤                        ├─→ Monthly Summary ─→ Quarterly Summary
+                   │                       │                        │
+                   └─→ OpEx Assumptions ───┘                        │
+                                                                    │
+                                           Cash Flow ───────────────┘
+```
+
+**Key cross-sheet relationships:**
+- Headcount Summary pulls from Headcount Input (SUMPRODUCT/SUMIF by department)
+- ARR Summary aggregates ARR (SUM, COUNTIF by month)
+- Costs by Department combines Headcount Summary + OpEx Assumptions
+- Cash Flow uses ARR Summary (collections) + Costs by Department (cash out)
+- Monthly Summary wires together ARR Summary, Costs by Department, and Cash Flow
+- Quarterly Summary aggregates Monthly Summary via SUMIF on quarter labels
+
+## Test Before Bulk Write
+
+When writing complex formulas (proration, SUMPRODUCT, nested IF), test on one cell first:
+
+1. Write the formula to a single cell (first data row, first month column)
+2. Read back the calculated value
+3. Verify it is not an error (#ERROR!, #REF!, #VALUE!, etc.)
+4. Verify the value makes sense (e.g., monthly salary should be ~1/12 of annual)
+5. Only then apply to all remaining rows/columns
+
+This prevents writing hundreds of broken formulas that cascade errors through downstream sheets.
+
 ## Audit Checklist
 1. No quoted department names ("G&A", "Sales", etc.)
 2. Ranges skip headers ($B$2:$B$100)

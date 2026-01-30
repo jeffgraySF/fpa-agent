@@ -28,7 +28,7 @@ Parse what the user wants:
 
 ### 2. Read Before Modifying
 
-ALWAYS read the affected area first:
+ALWAYS read the affected area first. Use the **Model Structure** graph in CLAUDE.md to understand which sheets are upstream/downstream of your target:
 - Current structure and formulas in the target range
 - Adjacent rows/columns that may need to stay consistent
 - Cross-sheet references pointing TO this area (what will break?)
@@ -113,6 +113,8 @@ Write formulas as strings starting with `=`:
 ```python
 client.write_range('Sheet', 'B10', [['=SUM(B3:B9)']])
 ```
+
+Follow the **Data Type Rules** and **Number Formatting** standards from CLAUDE.md when writing values. For bulk formula changes, follow **Test Before Bulk Write** from CLAUDE.md.
 
 ### 6. Verify After Changes
 

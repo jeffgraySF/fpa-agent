@@ -283,15 +283,7 @@ Build sheets in this order — each depends on the ones before it. **After each 
 
 #### 2.4 Test Before Bulk Write
 
-For any complex formula (proration, SUMPRODUCT, nested IF), **test it on one cell first**:
-
-1. Write the formula to a single cell (e.g., the first data row, first month column)
-2. Read back the calculated value
-3. Verify it is not an error (#ERROR!, #REF!, #VALUE!, etc.)
-4. Verify the value makes sense (e.g., a monthly salary should be ~1/12 of annual)
-5. Only then apply the formula to all remaining rows/columns
-
-If the test cell errors, debug and fix before proceeding. This prevents writing hundreds of broken formulas that cascade errors through downstream sheets.
+Follow the **Test Before Bulk Write** procedure from CLAUDE.md for every complex formula (proration, SUMPRODUCT, nested IF). If the test cell errors, debug and fix before proceeding.
 
 #### 2.5 Verify After Each Sheet
 
@@ -318,35 +310,11 @@ Follow these rules from CLAUDE.md in ALL formulas:
 
 #### 2.7 Data Type Rules
 
-Enforce proper types when writing data. Never write formatted strings.
-
-- **Dates**: Always use `=DATE(year,month,day)` formulas. Never write text like "8/1/25" or "2025-08-01"
-- **Currency**: Write as numeric values (175000), not formatted strings ("$175,000")
-- **Percentages**: Write as decimals (0.15), not text ("15%")
-- **Date headers**: All sheets reference `='Monthly Summary'!{col}$2`. Never write standalone date values in other sheets.
+Follow the **Data Type Rules** from CLAUDE.md. Dates must be `=DATE()` formulas, currency must be numeric, percentages as decimals.
 
 #### 2.8 Number Formatting
 
-After writing data and formulas to each sheet, apply number formats so the output is readable without manual formatting:
-
-- **Currency cells** (revenue, expenses, cash, salaries, ARR): Format as `$#,##0` or `$#,##0.00`
-- **Percentage cells** (margins, growth rates, NRR): Format as `0.0%`
-- **Date cells** (headers, start/end dates): Format as `M/D/YYYY`
-- **Integer cells** (headcount, customer counts): Format as `#,##0`
-- **Header rows**: Bold, with bottom border
-
-Use the Sheets API `repeatCell` or `updateCells` request to apply formats:
-```python
-client.batch_update([{
-    "repeatCell": {
-        "range": {"sheetId": sheet_id, "startRowIndex": r1, "endRowIndex": r2, "startColumnIndex": c1, "endColumnIndex": c2},
-        "cell": {"userEnteredFormat": {"numberFormat": {"type": "CURRENCY", "pattern": "$#,##0"}}},
-        "fields": "userEnteredFormat.numberFormat"
-    }
-}])
-```
-
-Apply formatting after each sheet is built and verified, not as a separate pass at the end.
+After writing data and formulas to each sheet, apply formats per the **Number Formatting** standards in CLAUDE.md. Apply formatting after each sheet is built and verified, not as a separate pass at the end.
 
 #### 2.9 Freeze Panes
 
