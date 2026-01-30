@@ -33,20 +33,12 @@ data = client.read_range('Sheet', 'A1:Z50')
 ```
 
 ## Formula Standards
-- **No hardcoded labels**: Use `$A{row}` not `"G&A"` or `"Sales"`
-- **Skip headers in ranges**: Use `$B$2:$B$100` not `$B:$B`
-- **Dates**: Real dates, not text. Monthly Summary row 2 is source of truth
+- **No hardcoded labels**: Use `$A{row}` not `"G&A"` or `"Sales"` — reference the row label cell
+- **Skip headers in ranges**: Use `$B$2:$B$100` not `$B:$B` — avoid including header rows in calculations
+- **Dates**: Always real dates (`=DATE()`), never text strings. Find the date source-of-truth row by inspecting the actual sheet — don't assume a specific row number or sheet name
 - **Department ref**: `$A{row}` (absolute col, relative row)
-- **Month ref**: `{col}$1` (relative col, absolute row)
-
-## Key Formulas
-```
-Quarter label:     =IF(C2="","","Q"&ROUNDUP(MONTH(C2)/3,0)&"-"&RIGHT(YEAR(C2),2))
-ARR helper:        =IF(AND($C2<=G$1,OR($E2="",$E2>G$1)),$D2,0)
-Quarterly SUM:     =SUMIF('Monthly Summary'!$C$1:$Z$1,C$1,'Monthly Summary'!$C{row}:$Z{row})
-CS COGS split:     =CS_Subtotal * 'OpEx Assumptions'!$E$4
-Allocated OpEx:    =(Dept HC / Total HC) * SUMIF('OpEx Assumptions'!$A:$A,"Overall",month_col)
-```
+- **Month ref**: `{col}$1` or `{col}$2` (relative col, absolute row) — use whichever row contains date headers in the actual sheet
+- **Discover before assuming**: Always run `/inspect` to find the actual date row, label column, and formula patterns before writing. Different models may use different layouts.
 
 ## Data Type Rules
 
@@ -55,7 +47,7 @@ When writing data to sheets, enforce proper types. Never write formatted strings
 - **Dates**: Always use `=DATE(year,month,day)` formulas. Never write text like "8/1/25" or "2025-08-01" — text dates break date comparisons in formulas.
 - **Currency**: Write as numeric values (175000), not formatted strings ("$175,000")
 - **Percentages**: Write as decimals (0.15), not text ("15%")
-- **Date headers**: All sheets reference `='Monthly Summary'!{col}$2`. Never write standalone date values in other sheets.
+- **Date headers**: If the model has a master date row, all other sheets should reference it rather than writing standalone date values. Find the master date sheet by inspecting cross-sheet references.
 
 ## Number Formatting
 
@@ -79,7 +71,19 @@ client.batch_update([{
 
 ## Model Structure
 
-Standard FP&A model sheets and their dependencies. Use this to understand downstream impact when modifying, auditing, or explaining formulas.
+### Discovering the actual structure
+
+Every model is different. Before modifying, auditing, or explaining formulas, discover the actual dependency graph:
+
+1. List all sheets (`get_spreadsheet_info()`)
+2. Run `/inspect [sheet] refs` on key sheets to find cross-sheet references
+3. Build a mental model of what feeds what
+
+Don't assume sheet names, row numbers, or column positions. Read first.
+
+### Standard template (for reference only)
+
+When `/create` builds a new model, it uses this default layout. Existing models may differ.
 
 ```
 Headcount Input ──┐
@@ -92,13 +96,13 @@ ARR ───────────────┤                       ├�
                                            Cash Flow ───────────────┘
 ```
 
-**Key cross-sheet relationships:**
-- Headcount Summary pulls from Headcount Input (SUMPRODUCT/SUMIF by department)
-- ARR Summary aggregates ARR (SUM, COUNTIF by month)
-- Costs by Department combines Headcount Summary + OpEx Assumptions
-- Cash Flow uses ARR Summary (collections) + Costs by Department (cash out)
-- Monthly Summary wires together ARR Summary, Costs by Department, and Cash Flow
-- Quarterly Summary aggregates Monthly Summary via SUMIF on quarter labels
+**Typical cross-sheet patterns** (names and positions vary):
+- A headcount summary sheet pulls from a headcount detail/input sheet
+- An ARR/revenue summary aggregates from a deal-level or booking-level sheet
+- A costs/expenses sheet combines headcount costs + operating expenses
+- A cash flow sheet uses revenue (collections) + expenses (cash out)
+- An executive summary wires together revenue, expenses, and cash
+- A quarterly view aggregates from the monthly view
 
 ## Test Before Bulk Write
 
@@ -113,10 +117,10 @@ When writing complex formulas (proration, SUMPRODUCT, nested IF), test on one ce
 This prevents writing hundreds of broken formulas that cascade errors through downstream sheets.
 
 ## Audit Checklist
-1. No quoted department names ("G&A", "Sales", etc.)
-2. Ranges skip headers ($B$2:$B$100)
-3. Formulas copy/paste correctly
-4. No #REF!, #VALUE!, #ERROR!
+1. No hardcoded labels in formulas — reference the label cell instead of quoting strings
+2. Ranges skip headers (e.g., `$B$2:$B$100` not `$B:$B`)
+3. Formulas copy/paste correctly across rows and columns
+4. No #REF!, #VALUE!, #ERROR!, #DIV/0!, #N/A
 
 ## Reconciliation Checks
 
@@ -164,13 +168,15 @@ Determine which checks are relevant by tracing what the modified sheet feeds int
 
 ### Check Definitions
 
-**Cash**: If a known cash balance exists (e.g., from a balance sheet), the model's Ending Cash for that month MUST equal the provided balance. Read the Ending Cash value and compare. If they don't match, trace the discrepancy.
+Each check compares a model output to a known input value. To run a check, first find the relevant cells by inspecting the actual sheet structure — don't assume specific row numbers or sheet names.
 
-**Headcount**: Total headcount in the model for recent months should match the number of active employees in the input data. Count employees with start dates before the month and no end date (or end date after the month). Note: rows with $0 total compensation (e.g., variable comp placeholders) are correctly excluded from HC count formulas that use `>0` checks.
+**Cash**: Find the sheet/row that calculates ending cash balance. If a known cash balance exists (e.g., from a balance sheet or user-provided value), compare the model's value for that date. If they don't match, trace the discrepancy through the dependency chain.
 
-**ARR**: Total ARR in the model should match the sum of active ARR records from the input data for any given month.
+**Headcount**: Find the sheet/row that calculates total headcount. Compare to the count of active employees in the input data for the same period. "Active" means: start date before the period end, and no end date (or end date after the period). Note: the model's HC formula may exclude certain rows (e.g., $0 comp placeholders) — understand how the formula counts before flagging a mismatch.
 
-**Revenue**: If actual monthly revenue data exists (e.g., from a P&L), compare the model's revenue for those months to the actuals. Flag any discrepancies.
+**ARR**: Find the sheet/row that calculates total ARR. Compare to the sum of active ARR records from the input data for the same month.
+
+**Revenue**: If actual revenue data exists (e.g., from a P&L or accounting system), find the model's revenue row and compare to actuals for overlapping periods.
 
 ### Report Format
 ```
