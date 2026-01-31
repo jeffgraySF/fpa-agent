@@ -139,14 +139,19 @@ After making changes:
 - Clear formatting from deleted column positions
 - Update formatting on remaining columns if needed (e.g., remove shading from quarterly columns that inherited annual column formatting)
 
-### 7. Post-Modification Audit
+### 7. Post-Modification Integrity Checks
 
-After verification, run `/audit` on the modified sheet to check for formula standard violations and FP&A best practices. This catches issues beyond simple errors — hardcoded labels, fragile references, whole-column ranges, and missing calculations that the basic verification step won't find.
+After verification, run a focused integrity check on the modified sheet. This is NOT a full audit — skip FP&A assessments, missing KPI suggestions, and industry benchmark analysis. Only check for issues that indicate the modification broke something:
 
-- Run `/audit [sheet name]` on the sheet you modified
-- If `/audit` finds issues introduced by your changes, fix them immediately
-- If `/audit` finds pre-existing issues unrelated to your changes, report them in the Notes section but do not fix them (the user didn't ask for that)
-- Include the audit result summary in your output
+1. **Error scan**: Scan all cells in the modified sheet for #REF!, #VALUE!, #NAME?, #DIV/0!, #ERROR!, #N/A
+2. **Formula standard violations introduced by this change**: Check only the rows/cells you touched for hardcoded labels, whole-column refs, or missing formulas
+3. **Cross-sheet breakage**: If your change shifted rows or renamed things, verify that other sheets referencing the modified area still resolve correctly
+
+Do NOT:
+- Suggest new KPIs, metrics, or rows to add
+- Evaluate completeness, clarity, or industry standards
+- Flag pre-existing issues unrelated to the change
+- Run `/audit` (the user can run that separately if they want a full review)
 
 ### 8. Reconciliation
 
@@ -177,7 +182,7 @@ Use the dependency table in CLAUDE.md to determine which checks (HC, ARR, Cash, 
 - [x] Formulas calculating correctly
 - [x] Cross-sheet references intact
 
-**Audit result**: [summary from /audit — "All checks passed" or list of issues found and whether they were fixed]
+**Integrity checks**: [errors found and fixed, or "No errors introduced ✓"]
 
 **Reconciliation**: [if applicable — summary from reconciliation checks, or "N/A — cosmetic change only"]
 
