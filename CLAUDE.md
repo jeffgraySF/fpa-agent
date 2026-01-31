@@ -20,7 +20,7 @@ Type a command or describe what you'd like to do.
 ```
 
 ## Quick Reference
-- Spreadsheet: https://docs.google.com/spreadsheets/d/1yYJlj3KNXtln6DzsVguwadnQPD5KIOPc7eWMl8zHAVU
+- Spreadsheet: https://docs.google.com/spreadsheets/d/1nukelxAubUaAch-L-_31pc9_BNH-uOv4RmqavwreDX4/edit?gid=765977477#gid=765977477
 - Credentials: `~/.fpa-agent/token.json` (OAuth), `./credentials.json` (client ID)
 - Python env: `.venv` with google-api-python-client
 
