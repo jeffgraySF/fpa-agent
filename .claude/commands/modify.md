@@ -26,17 +26,26 @@ Parse what the user wants:
 - **Delete**: Remove rows, columns, or data (requires explicit confirmation)
 - **Restructure**: Move or reorganize existing content
 
-### 2. Read Before Modifying
+### 2. Read the ENTIRE Sheet Before Modifying
 
-ALWAYS read the affected area first. Use the **Model Structure** graph in CLAUDE.md to understand which sheets are upstream/downstream of your target:
-- Current structure and formulas in the target range
-- Adjacent rows/columns that may need to stay consistent
+CRITICAL: Read ALL values and formulas for the entire sheet, not just the rows you plan to change. `write_range` overwrites whatever is in the target cells — if you only read rows 14-16 and write to rows 14-21, you will silently destroy rows 17-21 without knowing what was there.
+
+```python
+from src.sheets.client import SheetsClient
+client = SheetsClient('<spreadsheet_id>')
+_ = client.read_range('Sheet', 'A1:A1')  # required init workaround
+values = client.read_range('Sheet', 'A1:Z100')
+formulas = client.read_formulas('Sheet', 'A1:Z100')
+```
+
+Then understand:
+- The full layout — every row with content, including rows below your target
+- Current formulas in the target range and adjacent rows
 - Cross-sheet references pointing TO this area (what will break?)
 - Cross-sheet references FROM this area (what patterns to follow?)
 
 For row additions, also read:
-- The row above and below the insertion point
-- Formulas in those rows to understand the pattern
+- Formulas in adjacent rows to understand the pattern
 - Column headers to understand what each column needs
 
 ### 3. Plan the Changes
@@ -72,7 +81,17 @@ Before executing, create a clear plan:
 
 ### 4. Common Modification Patterns
 
-**Adding a new row (e.g., new department)**:
+**Adding rows to a section (e.g., new department, splitting a line item)**:
+- Use `insertDimension` via `batch_update()` to insert blank rows first — this pushes existing rows down and preserves their formulas. Never overwrite rows below the insertion point.
+```python
+client.batch_update([{
+    "insertDimension": {
+        "range": {"sheetId": sheet_id, "dimension": "ROWS", "startIndex": row_0idx, "endIndex": row_0idx + count},
+        "inheritFromBefore": False
+    }
+}])
+```
+- Then write formulas into the new blank rows
 - Copy formula patterns from adjacent row of same type
 - Update row references in formulas appropriately
 - Ensure subtotals/totals include the new row
@@ -115,6 +134,8 @@ client.write_range('Sheet', 'B10', [['=SUM(B3:B9)']])
 ```
 
 Follow the **Data Type Rules** and **Number Formatting** standards from CLAUDE.md when writing values. For bulk formula changes, follow **Test Before Bulk Write** from CLAUDE.md.
+
+**Column letter generation**: When building formulas programmatically across many columns, use `client._col_index_to_letter(index)` (0-based) to convert column indices to letters. Do NOT use `chr()` arithmetic — it breaks past column Z (index 25) because `chr(90+1)` is `[`, not `AA`.
 
 ### 6. Verify After Changes
 
