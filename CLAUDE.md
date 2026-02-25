@@ -19,6 +19,9 @@ Available commands:
 Type a command or describe what you'd like to do.
 ```
 
+## Skill Auto-Invocation
+When the user asks to make changes to a sheet (write formulas, update data, fix errors, add rows/columns), automatically invoke the `/modify` skill before proceeding — don't wait for the user to ask. Similarly, invoke `/inspect` when exploring structure and `/audit` when checking for errors.
+
 ## Quick Reference
 - Credentials: `~/.fpa-agent/token.json` (OAuth), `./credentials.json` (client ID)
 - Python env: `.venv` with google-api-python-client
