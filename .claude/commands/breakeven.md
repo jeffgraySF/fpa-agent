@@ -25,12 +25,28 @@ Before reading the sheet, assess whether the revenue model structure is already 
 
 If the sheet name is ambiguous or not previously seen in this session, check `get_spreadsheet_info()` to confirm it exists before reading.
 
-1. Read the revenue model sheet (Revenue Build or equivalent)
-2. For each business line, extract monthly: Revenue, COGS, CAC
-3. Compute monthly CAC-adjusted GM per line: `Revenue - COGS - CAC`
-4. Sum all lines for total monthly CAC-adjusted GM
-5. For each threshold, find the first month it is crossed
-6. Identify the primary driver(s) at each crossing point
+### Single-Read Approach
+
+Read the entire sheet in **one API call** using dimensions from the cached `get_spreadsheet_info()`:
+
+```python
+info = client.get_spreadsheet_info()
+sheet = next(s for s in info["sheets"] if s["name"] == "Revenue Build")
+last_col = client._col_index_to_letter(min(sheet["column_count"] - 1, 51))
+last_row = min(sheet["row_count"], 200)
+data = client.read_range("Revenue Build", f"A1:{last_col}{last_row}")
+```
+
+Then parse in one pass from `data`:
+- **Month columns**: scan row 0 for date-like strings → record col indices + labels
+- **Output rows**: scan the column just before the first month col for `Revenue`, `COGS`, `CAC` → record row index + business line (from col A)
+- Build `model[line][metric] = [float values per month]`
+
+1. Parse Revenue, COGS, CAC per business line from the single read
+2. Compute monthly CAC-adjusted GM per line: `Revenue - COGS - CAC`
+3. Sum all lines for total monthly CAC-adjusted GM
+4. For each threshold, find the first month it is crossed
+5. Identify the primary driver(s) at each crossing point
 
 ### Output Format
 
