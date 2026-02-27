@@ -44,9 +44,9 @@ data_cells = sheet["row_count"] * min(sheet["column_count"], 35) if sheet else 0
 | Request type | Examples | Check needed? |
 |---|---|---|
 | Specific cell or range | "fix B5", "update C12:C20", "row 45" | No — proceed directly |
-| Named row with clear label | "the EHR AI CAC row", "the date header row" | No — proceed directly |
+| Named row with clear label | "the Enterprise CAC row", "the date header row" | No — proceed directly |
 | Section-level, sheet is small (≤1,000 data cells) | any | No — proceed directly |
-| Section-level, sheet is large (>1,000 data cells) | "fix the EHR formulas", "update the revenue section" | **Yes — ask** |
+| Section-level, sheet is large (>1,000 data cells) | "fix the Enterprise formulas", "update the revenue section" | **Yes — ask** |
 | Whole-sheet or vague | "fix the formulas", "clean up this sheet" | **Yes — ask** |
 | Multi-sheet cascade | any change that touches 3+ sheets | **Yes — ask** |
 

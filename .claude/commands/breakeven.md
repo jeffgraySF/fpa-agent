@@ -38,14 +38,14 @@ If the sheet name is ambiguous or not previously seen in this session, check `ge
 Breakeven Analysis
 
 Threshold    Month      CAC-adj GM    Primary Driver
-$100k        Apr-27     $121,282      Payer AI + EHR PGx
-$175k        Jun-27     $207,411      Payer AI + EHR PGx
-$250k        Aug-27     $258,717      EHR PGx
+$100k        Apr-27      $98,400      Partner + Enterprise
+$175k        Jun-27     $184,500      Partner + Enterprise
+$250k        Sep-27     $261,300      Enterprise
 
 Monthly CAC-Adjusted GM by Line:
-Month      Con PGx   Con AI  EHR PGx   EHR AI  TPN PGx  TPN AI  Pay PGx  Pay AI    TOTAL
-Mar'26      $1,125       $0       $0       $0       $0      $0       $0      $0    $1,125
-Apr'26      $1,279       $0   $1,125  -$1,950       $0      $0       $0      $0      $454
+Month      Entpr     SMB   ProfSvc  Support    TOTAL
+Mar'26    $2,100      $0        $0       $0    $2,100
+Apr'26    $2,380      $0    $1,800  -$3,200      $980
 ...
 
 Key observations:

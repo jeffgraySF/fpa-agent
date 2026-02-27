@@ -7,7 +7,7 @@ Save the current model outputs as a named snapshot for future comparison with /d
 
 ## Arguments
 
-$ARGUMENTS - Label for this snapshot (e.g. "base case" or "after EHR CAC cut to 225")
+$ARGUMENTS - Label for this snapshot (e.g. "base case" or "after Enterprise CAC cut")
 
 ## Instructions
 
@@ -35,15 +35,15 @@ from src.analysis.snapshot import save_snapshot
 metrics = {
     "months": ["Mar'26", "Apr'26", ...],   # all months with revenue
     "by_line": {
-        "Consumer PGx": {
-            "rev":    [0, 3750, 4265, ...],
-            "cogs":   [0, 2625, 2986, ...],
-            "cac":    [0, 0,    0,    ...],
-            "gm_adj": [0, 1125, 1279, ...],
+        "Enterprise": {
+            "rev":    [0, 12000, 13600, ...],
+            "cogs":   [0,  8400,  9520, ...],
+            "cac":    [0,  1500,  1500, ...],
+            "gm_adj": [0,  2100,  2580, ...],
         },
         # ... all lines
     },
-    "total_gm_adj": [1125, 454, 25778, ...],
+    "total_gm_adj": [2100, 980, 31400, ...],
     "breakeven": "Jun-27",          # or None if not reached
     "breakeven_threshold": 175000,
 }
@@ -61,8 +61,8 @@ print(f"Saved: {path}")
 
 ```
 Snapshot saved: "base case"
-  Spreadsheet: Point Health Forecast_2026-02_Rev_Breakout
-  Months: Mar'26 – Dec'27 (22 months)
-  CAC-adj GM at Dec-27: $537,041
+  Spreadsheet: [Spreadsheet Name]
+  Months: Jan'26 – Dec'27 (24 months)
+  CAC-adj GM at Dec-27: $412,000
   Breakeven ($175k): Jun-27
 ```

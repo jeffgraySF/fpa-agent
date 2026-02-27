@@ -48,11 +48,11 @@ Scan: Revenue Build (96 rows × 35 cols)
 Errors (0): None ✓
 
 Static Values in Formula Rows (2):
-  C45  [EHR AI — CAC]        Static "450" between formula columns D45–AE45
-  M22  [Consumer AI — CAC]   Static "0" between formula columns N22–AE22
+  C45  [Enterprise — CAC]      Static "200" between formula columns D45–AE45
+  M22  [SMB — CAC]             Static "0" between formula columns N22–AE22
 
 Formula Pattern Breaks (1):
-  Q15  [Consumer PGx — Revenue]   Formula differs from row pattern
+  Q15  [Direct — Revenue]   Formula differs from row pattern
     Actual:   =P15*1.04
     Expected pattern: =SUMPRODUCT(CELL,CELL)
 

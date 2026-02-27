@@ -10,10 +10,10 @@ Run a what-if analysis on the model without modifying the sheet.
 $ARGUMENTS - Parameter change(s) and optional breakeven threshold
 
 Examples:
-- `/scenario EHR AI CAC = $225`
-- `/scenario EHR AI initial units = 3`
-- `/scenario EHR AI CAC halved, breakeven at $200k`
-- `/scenario TPN AI adds a second deal in Nov-26`
+- `/scenario Enterprise CAC = $150`
+- `/scenario Enterprise initial units = 3`
+- `/scenario Enterprise CAC halved, breakeven at $200k`
+- `/scenario Professional Services adds a second deal in Nov-26`
 
 ## Instructions
 
@@ -49,9 +49,9 @@ Scenario: [description]
 
 Monthly CAC-Adjusted GM:
 Month       Before        After         Delta
-Apr-27    $121,282     $142,884      +$21,602
-May-27    $157,775     $186,183      +$28,408
-Jun-27    $207,411     $245,388      +$37,977
+Apr-27     $98,400     $116,800      +$18,400
+May-27    $143,200     $170,100      +$26,900
+Jun-27    $184,500     $219,700      +$35,200
 ...
 
 Breakeven ($175k):

@@ -116,7 +116,7 @@ You'll see the welcome message with available commands.
 /modify add a new department row for "Product" below Engineering
 
 # What-if analysis without touching the sheet
-/scenario EHR AI CAC halved, breakeven at $200k
+/scenario Enterprise CAC halved, breakeven at $200k
 
 # Find breakeven month(s)
 /breakeven $100k $175k $250k

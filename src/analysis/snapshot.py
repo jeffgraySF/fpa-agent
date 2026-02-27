@@ -23,7 +23,7 @@ def save_snapshot(
     """Save a snapshot of model metrics to disk.
 
     Args:
-        label: Human-readable label (e.g. "base case", "after EHR CAC cut").
+        label: Human-readable label (e.g. "base case", "after Enterprise CAC cut").
         spreadsheet_id: The spreadsheet ID.
         spreadsheet_title: The spreadsheet title.
         metrics: Dict containing:

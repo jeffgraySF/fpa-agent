@@ -45,18 +45,18 @@ result = diff_snapshots(snap_a, snap_b)
 ```
 Comparing:
   Before: "base case" (Feb 25, 2:30pm)
-  After:  "after EHR CAC cut" (Feb 27, 9:15am)
+  After:  "after Enterprise CAC cut" (Feb 27, 9:15am)
 
 Changes by business line:
-  EHR AI — CAC reduced ~50%
-    Jun-27: $75,955 → $37,978  (-$37,977)
-    Sep-27: $190,979 → $95,490  (-$95,489)
+  Enterprise — CAC reduced ~50%
+    Jun-27: $38,200 → $19,100  (-$19,100)
+    Sep-27: $96,400 → $48,200  (-$48,200)
   [lines with no changes: omit]
 
 Total CAC-Adjusted GM (changed months only):
   Month       Before       After        Delta
-  May-27    $157,775    $186,183     +$28,408
-  Jun-27    $207,411    $245,388     +$37,977
+  May-27    $143,200    $170,100     +$26,900
+  Jun-27    $184,500    $219,700     +$35,200
   ...
 
 Breakeven ($175k):
