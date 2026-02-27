@@ -27,6 +27,25 @@ Type a command or describe what you'd like to do.
 ## Skill Auto-Invocation
 When the user asks to make changes to a sheet (write formulas, update data, fix errors, add rows/columns), automatically invoke the `/modify` skill before proceeding — don't wait for the user to ask. Similarly, invoke `/inspect` when exploring structure, `/audit` when checking for errors, `/scan` when doing a deep formula integrity check, `/scenario` when asked about what-if changes, `/breakeven` when asked about breakeven timing, and `/snapshot` + `/diff` when the user wants to track or compare model state across changes.
 
+## Data Privacy
+
+Client data stays in the session — it never goes into project files.
+
+**Never write to any project file** (`.claude/commands/`, `src/`, `CLAUDE.md`, `README.md`, skill files, or any tracked file):
+- Client or company names (e.g. the business you're working with)
+- Product line names, SKU names, or business unit names discovered from a spreadsheet
+- Spreadsheet titles or IDs
+- Actual financial figures, projections, or model outputs from a client's sheet
+- Any other data read from a connected spreadsheet
+
+**Where client data is allowed:**
+- In your working context (in-session memory — fine)
+- In user-requested output files (e.g. a story or analysis saved as a `.txt` file) — these must be gitignored
+
+**For examples in skill files and docs:** use generic SaaS placeholders like `Enterprise`, `SMB`, `Direct`, `Partner`, `Professional Services`. Never use names or line items from any real spreadsheet you've worked with, even as illustrations.
+
+**When updating project files mid-session:** scan your proposed changes for anything you read from a spreadsheet this session before writing. If a client term appears, replace it with a generic placeholder.
+
 ## Quick Reference
 - Credentials: `~/.fpa-agent/token.json` (OAuth), `./credentials.json` (client ID)
 - Python env: `.venv` with google-api-python-client
