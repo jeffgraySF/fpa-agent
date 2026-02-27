@@ -20,9 +20,17 @@ Examples:
 
 ## If No Arguments Provided
 
-List all sheets and show available options:
+List sheets, separating active from archived:
 ```
-Available sheets: [list sheet names]
+Active sheets:
+  Revenue Build        (996 rows × 35 cols)
+  Summary v2          (1004 rows × 36 cols)
+  Cost of Revenue      (1000 rows × 29 cols)
+  ...
+
+Archived (hidden/old):
+  Revenue Build OLD    (996 rows × 35 cols)
+  Summary ORIG        (1001 rows × 37 cols)
 
 Usage:
   /inspect <sheet>                   Full structure analysis
@@ -35,6 +43,10 @@ Usage:
 
 Which sheet would you like to inspect?
 ```
+
+Archived sheets are detected by names containing `OLD`, `ORIG`, `BACKUP`, `COPY`, `ARCHIVE`, or a lower version number when a higher one exists (e.g., `v1` when `v2` is present). List them separately so the user knows they exist but isn't nudged toward them by default.
+
+**If the user names an archived sheet**, proceed but note it: `Note: "Revenue Build OLD" looks like an archived sheet — inspecting anyway.`
 
 ## Instructions
 

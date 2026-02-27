@@ -47,18 +47,21 @@ Which would you prefer?
 Wait for a response before proceeding.
 
 **For `all` mode:**
-List every sheet with its size, estimate total time (~25s per sheet), and confirm before starting:
+Exclude archived sheets by default (names containing `OLD`, `ORIG`, `BACKUP`, `COPY`, `ARCHIVE`, or a lower version when a higher one exists). List active and archived separately, confirm before starting:
 
 ```
-Auditing all [N] sheets will take approximately [X] minutes.
+Auditing [N] active sheets (~[X] minutes total).
 
-Sheets:
-  Revenue Build    96 rows × 35 cols  (~35s)
-  Summary         45 rows × 26 cols  (~20s)
+Active sheets (will audit):
+  Revenue Build    996 rows × 35 cols  (~35s)
+  Summary v2      1004 rows × 36 cols  (~35s)
   ...
-  Total estimated: ~[X] min
 
-Proceed with all sheets, or name the ones to audit?
+Archived sheets (skipping by default):
+  Revenue Build OLD    996 rows × 35 cols
+  Summary ORIG        1001 rows × 37 cols
+
+Proceed with active sheets, include archived too, or name specific sheets?
 ```
 
 ### 2. Connect and Read Structure

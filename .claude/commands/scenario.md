@@ -24,6 +24,30 @@ Parse the arguments to identify:
 - **New value or transformation**: absolute value, multiplier (halved, doubled), or delta
 - **Comparison lens** (optional): what the user wants to measure — breakeven timing, total revenue at a date, GM at a date, cost savings, etc. If not specified, infer from context or show the full before/after monthly table and let the numbers speak.
 
+### Sheet Resolution
+
+Before reading anything, resolve the target sheet from the sheet list (cached, no extra API call):
+
+```python
+info = client.get_spreadsheet_info()
+sheets = info["sheets"]
+```
+
+**If the user named a sheet explicitly** → use it. Skip the rest of this section. (If the name looks archived — contains OLD, ORIG, BACKUP, COPY, ARCHIVE — warn the user but proceed.)
+
+**If the sheet must be inferred** (e.g., "the revenue model", no sheet specified):
+1. Find candidates whose names match the request's intent (e.g., "Revenue" in name for a revenue scenario)
+2. Exclude sheets that look archived — names containing `OLD`, `ORIG`, `BACKUP`, `COPY`, `ARCHIVE`, or a lower version number when a higher one exists (e.g., `v1` when `v2` is present)
+3. Resolve:
+   - **1 candidate** → use it, note it in output: `Using: Revenue Build`
+   - **2+ candidates** → ask before reading:
+     ```
+     I see multiple candidate sheets — which should I use?
+       Revenue Build      (996 rows × 35 cols)  ← likely current
+       Summary v2         (1004 rows × 36 cols)
+     ```
+   - **0 candidates** → ask the user which sheet to use
+
 ### Context Check
 
 Before reading the sheet, assess whether the revenue model structure is already known from this session:

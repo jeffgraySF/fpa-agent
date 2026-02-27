@@ -16,6 +16,30 @@ Examples:
 
 ## Instructions
 
+### Sheet Resolution
+
+Before reading anything, resolve the target sheet from the sheet list (cached, no extra API call):
+
+```python
+info = client.get_spreadsheet_info()
+sheets = info["sheets"]
+```
+
+**If the user named a sheet explicitly** → use it. (Warn if the name looks archived — contains OLD, ORIG, BACKUP, COPY, ARCHIVE.)
+
+**If the sheet must be inferred:**
+1. Find candidates whose names suggest a revenue model (e.g., "Revenue" in name)
+2. Exclude archived sheets: names containing `OLD`, `ORIG`, `BACKUP`, `COPY`, `ARCHIVE`, or a lower version number when a higher one exists
+3. Resolve:
+   - **1 candidate** → use it, note it in output: `Using: Revenue Build`
+   - **2+ candidates** → ask before reading:
+     ```
+     I see multiple candidate sheets — which should I use?
+       Revenue Build      (996 rows × 35 cols)  ← likely current
+       Revenue Build OLD  (996 rows × 35 cols)
+     ```
+   - **0 candidates** → ask the user which sheet to use
+
 ### Context Check
 
 Before reading the sheet, assess whether the revenue model structure is already known from this session:

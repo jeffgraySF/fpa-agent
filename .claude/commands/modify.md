@@ -30,12 +30,27 @@ Parse what the user wants:
 
 Run this **before reading the sheet**. The goal is to catch vague requests on large sheets before burning 10+ API calls on discovery.
 
-**Step 1** — Get sheet size (one fast call, cached):
+**Step 1** — Get sheet list and resolve the target sheet (one fast call, cached):
 ```python
 from src.sheets.client import SheetsClient
 client = SheetsClient('<spreadsheet_id>')
 info = client.get_spreadsheet_info()
-sheet = next(s for s in info["sheets"] if s["name"] == "<sheet_name>", None)
+```
+
+If the user named a sheet explicitly, use it — but warn if the name looks archived (contains OLD, ORIG, BACKUP, COPY, ARCHIVE).
+
+If the sheet must be inferred from the request, filter the sheet list:
+- Find candidates that match the request's intent (e.g., "Monthly Summary" for a summary-type change)
+- Exclude archived sheets: names containing `OLD`, `ORIG`, `BACKUP`, `COPY`, `ARCHIVE`, or a lower version when a higher one exists
+- **1 candidate** → proceed; **2+ candidates** → ask before reading:
+  ```
+  I see multiple candidate sheets — which should I use?
+    Summary v2      (1004 rows × 36 cols)  ← likely current
+    Summary ORIG    (1001 rows × 37 cols)
+  ```
+
+```python
+sheet = next((s for s in info["sheets"] if s["name"] == "<resolved_sheet_name>"), None)
 data_cells = sheet["row_count"] * min(sheet["column_count"], 35) if sheet else 0
 ```
 
