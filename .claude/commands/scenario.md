@@ -7,20 +7,22 @@ Run a what-if analysis on the model without modifying the sheet.
 
 ## Arguments
 
-$ARGUMENTS - Parameter change(s) and optional breakeven threshold
+$ARGUMENTS - Parameter change(s) and an optional comparison lens
 
 Examples:
 - `/scenario Enterprise CAC = $150`
 - `/scenario Enterprise initial units = 3`
-- `/scenario Enterprise CAC halved, breakeven at $200k`
+- `/scenario raise Consumer AI price to $10`
 - `/scenario Professional Services adds a second deal in Nov-26`
+- `/scenario Enterprise CAC halved, how does that affect breakeven?`
+- `/scenario double SMB growth rate, what's the revenue impact by Dec-27?`
 
 ## Instructions
 
 Parse the arguments to identify:
 - **Parameter**: which business line and which assumption to change
 - **New value or transformation**: absolute value, multiplier (halved, doubled), or delta
-- **Threshold**: breakeven target (default $175k)
+- **Comparison lens** (optional): what the user wants to measure — breakeven timing, total revenue at a date, GM at a date, cost savings, etc. If not specified, infer from context or show the full before/after monthly table and let the numbers speak.
 
 ### Context Check
 
@@ -59,12 +61,12 @@ data = client.read_range("Revenue Build", f"A1:{last_col}{last_row}")
    - Build a dict: `model[line][metric] = [float values per month]`
 
 3. Apply the override in memory — do NOT write to the sheet
-4. Recompute monthly CAC-adjusted GM per line: `gm_adj = revenue - cogs - cac`
-5. Sum across lines for total monthly CAC-adjusted GM
-6. Find the crossing month for the threshold (before and after)
-7. Show the comparison
+4. Recompute the relevant metric(s) per line per month
+5. Show the before/after comparison focused on what the user asked about
 
 ### Output Format
+
+Always show the monthly delta table. What you show *after* it depends on the user's goal:
 
 ```
 Scenario: [description]
@@ -76,12 +78,15 @@ May-27    $143,200     $170,100      +$26,900
 Jun-27    $184,500     $219,700      +$35,200
 ...
 
-Breakeven ($175k):
-  Base:     Jun-27
-  Scenario: May-27  (1 month earlier)
-
-Driver: [which line changed and magnitude of change]
+Driver: [which line changed and by how much]
 ```
 
-Only show months where the delta is non-zero. If breakeven doesn't change, say so.
-If the scenario makes breakeven unreachable within the model horizon, say so.
+**Then add the relevant summary based on the comparison lens:**
+
+- If the user asked about **breakeven timing**: add a `Breakeven ($Xk): Base: [month] / Scenario: [month]` block. Use any threshold stated in the arguments; if none given, check the sheet for a stated target (see `/breakeven` threshold detection). Only include this block if breakeven is relevant to the question.
+- If the user asked about **revenue or GM at a date**: add a one-line summary: `Revenue at Dec-27: $X → $Y (+$Z)`
+- If the user asked about **cost impact**: add a one-line summary of total CAC savings or cost reduction
+- If no specific lens was given: just show the monthly table and a one-line bottom line (e.g., "+$35k/month by end of model horizon")
+
+Only show months where the delta is non-zero.
+If the scenario makes an outcome unreachable within the model horizon, say so.

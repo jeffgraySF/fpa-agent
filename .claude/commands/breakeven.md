@@ -7,12 +7,12 @@ Find the month(s) where CAC-adjusted gross margin crosses one or more thresholds
 
 ## Arguments
 
-$ARGUMENTS - Optional threshold(s) in dollars. Default: $175k
+$ARGUMENTS - Optional threshold(s) in dollars. If omitted, the threshold is read from the sheet or confirmed with the user.
 
 Examples:
-- `/breakeven` — default $175k
-- `/breakeven $100k $175k $250k` — multiple thresholds
-- `/breakeven $200k` — custom threshold
+- `/breakeven` — detect threshold from sheet, or ask
+- `/breakeven $100k $175k $250k` — multiple explicit thresholds
+- `/breakeven $200k` — single explicit threshold
 
 ## Instructions
 
@@ -42,11 +42,25 @@ Then parse in one pass from `data`:
 - **Output rows**: scan the column just before the first month col for `Revenue`, `COGS`, `CAC` → record row index + business line (from col A)
 - Build `model[line][metric] = [float values per month]`
 
+### Threshold Detection
+
+If the user provided explicit threshold(s) in the arguments, use those. Otherwise:
+
+1. **Scan the sheet** (already in memory from the single read) for cells containing phrases like "need", "target", "breakeven", "goal" near a dollar amount. A note cell like "Need $175,000 monthly of CAC-adjusted GM" is a valid source.
+2. **If found**: use that value and tell the user where it came from — e.g., `Threshold: $175k (from Revenue Inputs A17)`
+3. **If not found**: ask before assuming:
+   ```
+   No breakeven target found in the sheet. What threshold should I use? (e.g. $175k)
+   ```
+
+### Steps
+
 1. Parse Revenue, COGS, CAC per business line from the single read
-2. Compute monthly CAC-adjusted GM per line: `Revenue - COGS - CAC`
-3. Sum all lines for total monthly CAC-adjusted GM
-4. For each threshold, find the first month it is crossed
-5. Identify the primary driver(s) at each crossing point
+2. Resolve the threshold (from arguments, sheet, or user confirmation)
+3. Compute monthly CAC-adjusted GM per line: `Revenue - COGS - CAC`
+4. Sum all lines for total monthly CAC-adjusted GM
+5. For each threshold, find the first month it is crossed
+6. Identify the primary driver(s) at each crossing point
 
 ### Output Format
 
