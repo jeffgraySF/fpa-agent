@@ -198,7 +198,35 @@ Write formulas as strings starting with `=`:
 client.write_range('Sheet', 'B10', [['=SUM(B3:B9)']])
 ```
 
-Follow the **Data Type Rules** and **Number Formatting** standards from CLAUDE.md when writing values. For bulk formula changes, follow **Test Before Bulk Write** from CLAUDE.md.
+**Data Type Rules** — never write formatted strings:
+- **Dates**: Always `=DATE(year,month,day)`. Never text like "8/1/25" or "2025-08-01" — text dates break formula comparisons.
+- **Currency**: Numeric values (175000), not formatted strings ("$175,000")
+- **Percentages**: Decimals (0.15), not text ("15%")
+- **Date headers**: Reference the master date row rather than writing standalone date values.
+
+**Number Formatting** — apply formats after writing so output is readable:
+- Currency cells (revenue, expenses, cash, salaries, ARR): `$#,##0`
+- Percentage cells (margins, growth rates, NRR): `0.0%`
+- Date cells (headers, start/end dates): `M/D/YYYY`
+- Integer cells (headcount, customer counts): `#,##0`
+- Header rows: Bold
+
+```python
+client.batch_update([{
+    "repeatCell": {
+        "range": {"sheetId": sheet_id, "startRowIndex": r1, "endRowIndex": r2, "startColumnIndex": c1, "endColumnIndex": c2},
+        "cell": {"userEnteredFormat": {"numberFormat": {"type": "CURRENCY", "pattern": "$#,##0"}}},
+        "fields": "userEnteredFormat.numberFormat"
+    }
+}])
+```
+
+**Test Before Bulk Write** — for complex formulas (proration, SUMPRODUCT, nested IF):
+1. Write the formula to a single cell (first data row, first month column)
+2. Read back the calculated value
+3. Verify it is not an error (#ERROR!, #REF!, #VALUE!, etc.)
+4. Verify the value makes sense (e.g., monthly salary should be ~1/12 of annual)
+5. Only then apply to all remaining rows/columns
 
 **Column letter generation**: When building formulas programmatically across many columns, use `client._col_index_to_letter(index)` (0-based) to convert column indices to letters. Do NOT use `chr()` arithmetic — it breaks past column Z (index 25) because `chr(90+1)` is `[`, not `AA`.
 
@@ -241,13 +269,45 @@ Do NOT:
 
 ### 9. Reconciliation
 
-Run the **Reconciliation Checks** from CLAUDE.md using the appropriate tier:
+After making changes, verify key outputs still tie to known input values.
 
-- **Tier 1 (skip)**: Cosmetic changes — formatting, labels, column headers
-- **Tier 2 (spot check)**: Single-sheet formula fix or value update — read one downstream cell per relevant check
-- **Tier 3 (full)**: Structural changes (add/remove rows/columns), bulk formula rewrites, multi-sheet changes
+**Tier 1 — Skip**: Cosmetic changes (formatting, bold, colors, column widths, labels that don't affect formulas).
 
-Use the dependency table in CLAUDE.md to determine which checks (HC, ARR, Cash, Revenue) apply based on the sheet you modified.
+**Tier 2 — Spot Check**: Single-sheet formula fix or value update. Read **one cell** per relevant check and compare to the known baseline. Costs 1-2 API reads total.
+
+**Tier 3 — Full Reconciliation**: Structural changes (add/remove rows/columns), bulk formula rewrites, or multi-sheet changes. Run all relevant checks across multiple months.
+
+**Which checks to run** — trace what the modified sheet feeds into:
+1. Run `/inspect [modified sheet] refs` to find which other sheets reference it
+2. Follow the chain downstream
+3. Map impact to checks:
+   - Feeds into ARR/MRR calculations → check ARR
+   - Feeds into revenue or COGS → check GP
+   - Feeds into cash balances → check Ending Cash
+4. If the modified sheet is a downstream endpoint (nothing references it), skip reconciliation
+
+| Sheet | Typically affects |
+|---|---|
+| ARR | ARR, Ending Cash |
+| Revenue / Services | GP, Ending Cash |
+| COGS / Cost of Revenue | GP, Ending Cash |
+| OpEx Assumptions | Ending Cash |
+| Costs by Department | Ending Cash |
+| Cash Flow | Ending Cash |
+| Monthly / Quarterly Summary | Nothing (endpoint) |
+
+**Check definitions** — find the relevant cells by inspecting the actual sheet; don't assume row numbers:
+- **ARR**: Total ARR row vs. sum of active ARR records from input data for the same month.
+- **GP**: Gross profit row (Revenue − COGS). Compare to actuals if they exist; otherwise verify formula and margin % match model assumptions.
+- **Ending Cash**: Compare to a known balance (from balance sheet or user-provided). If mismatch, trace through the dependency chain.
+
+**Report format**:
+```
+## Reconciliation ([tier])
+- ARR ([month]): Model $[X] vs. Input $[Y] — [MATCH / MISMATCH by $Z]
+- GP ([month]): Model $[X] ($[margin]% margin) vs. Expected $[Y] — [MATCH / MISMATCH by $Z]
+- Ending Cash ([date]): Model $[X] vs. Input $[Y] — [MATCH / MISMATCH by $Z]
+```
 
 ### 10. Output Format
 

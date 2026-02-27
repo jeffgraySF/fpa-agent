@@ -162,6 +162,19 @@ Proceed with this mapping?
 
 Only proceed after user confirmation of the mapping.
 
+#### Standard sheet dependency order
+
+```
+Headcount Input ──┐
+                   ├─→ Headcount Summary ──┐
+ARR ───────────────┤                       ├─→ Costs by Department ──┐
+                   ├─→ ARR Summary ────────┤                        ├─→ Monthly Summary ─→ Quarterly Summary
+                   │                       │                        │
+                   └─→ OpEx Assumptions ───┘                        │
+                                                                    │
+                                           Cash Flow ───────────────┘
+```
+
 #### 2.1 Create New Spreadsheet or Sheets
 
 If building in the same spreadsheet, create new sheets. If the user wants a new spreadsheet, ask for the URL.
@@ -283,7 +296,7 @@ Build sheets in this order — each depends on the ones before it. **After each 
 
 #### 2.4 Test Before Bulk Write
 
-Follow the **Test Before Bulk Write** procedure from CLAUDE.md for every complex formula (proration, SUMPRODUCT, nested IF). If the test cell errors, debug and fix before proceeding.
+For every complex formula (proration, SUMPRODUCT, nested IF): write to one cell, read back the value, verify it's not an error and makes sense, then apply to remaining cells. If the test cell errors, debug and fix before proceeding.
 
 #### 2.5 Verify After Each Sheet
 
@@ -310,11 +323,16 @@ Follow these rules from CLAUDE.md in ALL formulas:
 
 #### 2.7 Data Type Rules
 
-Follow the **Data Type Rules** from CLAUDE.md. Dates must be `=DATE()` formulas, currency must be numeric, percentages as decimals.
+Never write formatted strings. Dates must be `=DATE()` formulas (never text like "8/1/25"), currency as numeric values (175000 not "$175,000"), percentages as decimals (0.15 not "15%").
 
 #### 2.8 Number Formatting
 
-After writing data and formulas to each sheet, apply formats per the **Number Formatting** standards in CLAUDE.md. Apply formatting after each sheet is built and verified, not as a separate pass at the end.
+After each sheet is built and verified, apply number formats:
+- Currency cells (revenue, expenses, cash, salaries, ARR): `$#,##0`
+- Percentage cells (margins, growth rates, NRR): `0.0%`
+- Date cells (headers, start/end dates): `M/D/YYYY`
+- Integer cells (headcount, customer counts): `#,##0`
+- Header rows: Bold
 
 #### 2.9 Freeze Panes
 
@@ -337,7 +355,11 @@ Run `/audit all` on the new spreadsheet to check:
 
 #### 3.1 Reconciliation Checks
 
-Run the **Reconciliation Checks** from CLAUDE.md. These verify that cash, headcount, ARR, and revenue in the model tie to the known input values. Fix any mismatches before reporting completion.
+Verify that key model outputs tie to known input values. Fix any mismatches before reporting completion.
+
+- **ARR**: Total ARR for a given month should match the sum of active ARR records in the input data.
+- **GP**: Gross profit should equal Revenue − COGS; margin % should match model assumptions.
+- **Ending Cash**: Compare to the starting cash input plus/minus expected net cash flow. Trace any mismatch through the dependency chain.
 
 Report the final result:
 ```
