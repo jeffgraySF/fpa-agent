@@ -50,6 +50,7 @@ Client data stays in the session — it never goes into project files.
 - Credentials: `~/.fpa-agent/token.json` (OAuth), `./credentials.json` (client ID)
 - Python env: `.venv` with google-api-python-client
 - Use `/connect <url>` to connect to a spreadsheet
+- Google Sheets API: 60 writes/minute limit — use `batch_update` for bulk changes
 
 ## Formula Standards
 - **No hardcoded labels**: Use `$A{row}` not `"G&A"` or `"Sales"` — reference the row label cell
@@ -68,7 +69,7 @@ Client data stays in the session — it never goes into project files.
 ## When to Read Docs
 - **Creating new sheets or sections**: Read `template_specs.md` for standard layouts, row mappings, and formula patterns
 - **Discretionary decisions**: Read `template_specs.md` when you have flexibility on structure
-- **After structural changes**: Update `INSTRUCTIONS.md` and `template_specs.md`
+- **After structural changes**: Update `template_specs.md`
 
 ## Skill Design Principles
 

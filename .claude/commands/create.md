@@ -328,11 +328,12 @@ Never write formatted strings. Dates must be `=DATE()` formulas (never text like
 #### 2.8 Number Formatting
 
 After each sheet is built and verified, apply number formats:
+- Font: Roboto 10 (apply to all cells)
 - Currency cells (revenue, expenses, cash, salaries, ARR): `$#,##0`
 - Percentage cells (margins, growth rates, NRR): `0.0%`
 - Date cells (headers, start/end dates): `M/D/YYYY`
 - Integer cells (headcount, customer counts): `#,##0`
-- Header rows: Bold
+- Header rows and section labels: Bold
 
 #### 2.9 Freeze Panes
 
