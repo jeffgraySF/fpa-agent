@@ -47,6 +47,26 @@ def test_no_phantom_commands_in_welcome():
         )
 
 
+# ── Client data privacy ───────────────────────────────────────────────────
+
+
+# Real Google Sheets IDs are 40-44 char base64url strings.
+# Skill files use placeholders like <spreadsheet_id> — never real IDs.
+_SHEETS_URL_RE = re.compile(r"docs\.google\.com/spreadsheets/d/[A-Za-z0-9_-]{20,}")
+
+# Files that should never contain real spreadsheet URLs
+_PROTECTED_FILES = list(ROOT.glob("*.md")) + list(COMMANDS_DIR.glob("*.md"))
+
+
+def test_no_client_spreadsheet_urls_in_project_files():
+    """Project files must not contain real Google Sheets URLs (client data leak)."""
+    for path in _PROTECTED_FILES:
+        matches = _SHEETS_URL_RE.findall(path.read_text())
+        assert not matches, (
+            f"Real spreadsheet URL found in {path.relative_to(ROOT)}: {matches}"
+        )
+
+
 # ── Code examples reference real modules ──────────────────────────────────
 
 
