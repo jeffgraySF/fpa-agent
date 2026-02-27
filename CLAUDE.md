@@ -215,6 +215,15 @@ Each check compares a model output to a known input value. To run a check, first
 - **Discretionary decisions**: Read `template_specs.md` when you have flexibility on structure
 - **After structural changes**: Update `INSTRUCTIONS.md` and `template_specs.md`
 
+## Skill Design Principles
+
+When modifying or creating skills, optimize for speed and token efficiency:
+
+- **Minimize API calls**: batch reads and writes; don't read the same range twice
+- **Fail fast**: scope-check before reading large sheets — stop early if the request is vague or the target is ambiguous
+- **Avoid unnecessary steps**: don't run reconciliation, audits, or integrity checks unless the change warrants it
+- **Prompt minimally**: don't add confirmation gates for small, reversible changes — Google Sheets version history handles rollback
+
 ## When to Update README
 After making changes, check if `README.md` needs updating. Update it when:
 - A new command is added or an existing command's purpose changes
