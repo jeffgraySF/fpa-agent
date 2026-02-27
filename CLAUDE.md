@@ -50,7 +50,7 @@ Client data stays in the session — it never goes into project files.
 - Credentials: `~/.fpa-agent/token.json` (OAuth), `./credentials.json` (client ID)
 - Python env: `.venv` with google-api-python-client
 - Use `/connect <url>` to connect to a spreadsheet
-- Google Sheets API: 60 writes/minute limit — use `batch_update` for bulk changes
+- Google Sheets API: 300 requests/minute per project, 60/minute per user — each `batch_update` counts as one request regardless of operations, so batch aggressively
 
 ## Formula Standards
 - **No hardcoded labels**: Use `$A{row}` not `"G&A"` or `"Sales"` — reference the row label cell
