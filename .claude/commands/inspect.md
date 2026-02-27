@@ -1,5 +1,5 @@
 ---
-model: haiku
+model: sonnet
 ---
 # Inspect Sheet
 
@@ -45,6 +45,45 @@ Parse the arguments to determine:
 - **Trace direction**: precedents (default), dependents, or both
 
 Natural language is fine (e.g., "just show me the errors" = errors mode).
+
+### Complexity Check
+
+Run this **before reading any sheet data**. It costs one API call (cached).
+
+```python
+from src.sheets.client import SheetsClient
+client = SheetsClient('<spreadsheet_id>')
+info = client.get_spreadsheet_info()
+sheet = next(s for s in info["sheets"] if s["name"] == "<sheet_name>")
+data_cells = sheet["row_count"] * min(sheet["column_count"], 35)
+```
+
+Use this table to decide whether to warn:
+
+| Mode | Condition | Approx. time | Warn? |
+|------|-----------|--------------|-------|
+| full | data_cells > 1,000 | 20–40s, 15+ API calls | **Yes** |
+| refs | data_cells > 1,000 | 15–25s, 12+ API calls | **Yes** |
+| errors | any size | 5–10s | No |
+| formulas | any size | 8–12s | No |
+| rows (specific range) | any size | 3–5s | No |
+| trace | any cell | 5–10s | No |
+
+If a warning is needed, respond with this **before doing any further reads**:
+
+```
+[Sheet] is [R] rows × [C] cols (~[N] data cells). Full inspection will take ~[X] seconds.
+
+Faster options:
+  /inspect [sheet] errors          (~5s)   scan for broken formulas only
+  /inspect [sheet] formulas        (~8s)   formula patterns and structure
+  /inspect [sheet] refs            (~15s)  cross-sheet references only
+  /inspect [sheet] rows [1-20]     (~3s)   specific rows in full detail
+
+Proceed with full inspection, or narrow the scope?
+```
+
+Wait for a response before reading the sheet. If the user says proceed, continue with full mode.
 
 ### Reading Strategy
 

@@ -1,12 +1,16 @@
 """Google Sheets API client wrapper."""
 
 import os
+import time
 from typing import Any
 
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 from .auth import get_credentials
 from .url import extract_spreadsheet_id
+
+_RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 
 
 class SheetsClient:
@@ -27,6 +31,8 @@ class SheetsClient:
 
         creds = get_credentials()
         self._service = build("sheets", "v4", credentials=creds)
+        self._sheets = self._service.spreadsheets()
+        self._info_cache: dict[str, Any] | None = None
 
     def set_spreadsheet(self, url_or_id: str) -> dict[str, Any]:
         """Switch to a different spreadsheet.
@@ -38,6 +44,7 @@ class SheetsClient:
             Info about the spreadsheet that was connected.
         """
         self.spreadsheet_id = extract_spreadsheet_id(url_or_id)
+        self._info_cache = None
         return self.get_spreadsheet_info()
 
     def _require_spreadsheet(self):
@@ -46,17 +53,42 @@ class SheetsClient:
             raise ValueError(
                 "No spreadsheet connected. Use connect_to_spreadsheet tool with a Google Sheets URL first."
             )
-        self._sheets = self._service.spreadsheets()
+
+    def _execute(self, request, retries: int = 4) -> Any:
+        """Execute an API request with exponential backoff on retryable errors.
+
+        Args:
+            request: A googleapiclient request object.
+            retries: Maximum number of retry attempts.
+
+        Returns:
+            API response.
+        """
+        delay = 1.0
+        for attempt in range(retries + 1):
+            try:
+                return request.execute()
+            except HttpError as e:
+                if e.status_code in _RETRYABLE_STATUS_CODES and attempt < retries:
+                    time.sleep(delay)
+                    delay *= 2
+                else:
+                    raise
 
     # ─────────────────────────────────────────────────────────────────────────
     # Read operations
     # ─────────────────────────────────────────────────────────────────────────
 
     def get_spreadsheet_info(self) -> dict[str, Any]:
-        """Get metadata about the spreadsheet including all sheet names."""
+        """Get metadata about the spreadsheet including all sheet names.
+
+        Result is cached for the lifetime of this spreadsheet connection.
+        """
         self._require_spreadsheet()
-        result = self._sheets.get(spreadsheetId=self.spreadsheet_id).execute()
-        return {
+        if self._info_cache is not None:
+            return self._info_cache
+        result = self._execute(self._sheets.get(spreadsheetId=self.spreadsheet_id))
+        self._info_cache = {
             "title": result["properties"]["title"],
             "sheets": [
                 {
@@ -68,6 +100,19 @@ class SheetsClient:
                 for sheet in result["sheets"]
             ],
         }
+        return self._info_cache
+
+    def _read_range(self, sheet_name: str, range_spec: str, render_option: str) -> list[list[Any]]:
+        """Internal range read with a given valueRenderOption."""
+        self._require_spreadsheet()
+        result = self._execute(
+            self._sheets.values().get(
+                spreadsheetId=self.spreadsheet_id,
+                range=f"'{sheet_name}'!{range_spec}",
+                valueRenderOption=render_option,
+            )
+        )
+        return result.get("values", [])
 
     def read_range(self, sheet_name: str, range_spec: str) -> list[list[Any]]:
         """Read values from a range.
@@ -79,13 +124,7 @@ class SheetsClient:
         Returns:
             2D list of cell values.
         """
-        self._require_spreadsheet()
-        result = self._sheets.values().get(
-            spreadsheetId=self.spreadsheet_id,
-            range=f"'{sheet_name}'!{range_spec}",
-            valueRenderOption="FORMATTED_VALUE",
-        ).execute()
-        return result.get("values", [])
+        return self._read_range(sheet_name, range_spec, "FORMATTED_VALUE")
 
     def read_formulas(self, sheet_name: str, range_spec: str) -> list[list[Any]]:
         """Read formulas from a range (returns formula text, not computed values).
@@ -97,13 +136,7 @@ class SheetsClient:
         Returns:
             2D list of cell formulas/values.
         """
-        self._require_spreadsheet()
-        result = self._sheets.values().get(
-            spreadsheetId=self.spreadsheet_id,
-            range=f"'{sheet_name}'!{range_spec}",
-            valueRenderOption="FORMULA",
-        ).execute()
-        return result.get("values", [])
+        return self._read_range(sheet_name, range_spec, "FORMULA")
 
     def inspect_sheet(self, sheet_name: str, sample_rows: int = 20) -> dict[str, Any]:
         """Get a comprehensive view of a sheet's structure for analysis.
@@ -127,7 +160,7 @@ class SheetsClient:
         """
         self._require_spreadsheet()
 
-        # Get sheet dimensions
+        # Get sheet dimensions (uses cache)
         info = self.get_spreadsheet_info()
         sheet_info = next((s for s in info["sheets"] if s["name"] == sheet_name), None)
         if not sheet_info:
@@ -156,13 +189,16 @@ class SheetsClient:
                 elif cell:  # Non-empty, non-formula
                     data_columns.add(col_idx)
 
-        # Get row labels (column A)
+        # Get row labels (column A) from already-fetched values
         row_labels = [row[0] if row else "" for row in values]
 
-        # Find actual data extent (last non-empty row)
-        # Check a larger range to estimate total rows
-        col_a_check = self.read_range(sheet_name, "A1:A500")
-        last_row = len([r for r in col_a_check if r and r[0]])
+        # Estimate total rows from column A in the sample; if sample is full,
+        # fetch a larger range to find the true extent
+        if len(values) >= sample_rows:
+            col_a_extended = self._read_range(sheet_name, "A1:A500", "FORMATTED_VALUE")
+            last_row = len([r for r in col_a_extended if r and r[0]])
+        else:
+            last_row = len([r for r in values if r and r[0]])
 
         return {
             "sheet_name": sheet_name,
@@ -216,13 +252,15 @@ class SheetsClient:
         Returns:
             API response with update details.
         """
-        result = self._sheets.values().update(
-            spreadsheetId=self.spreadsheet_id,
-            range=f"'{sheet_name}'!{range_spec}",
-            valueInputOption="RAW" if raw else "USER_ENTERED",
-            body={"values": values},
-        ).execute()
-        return result
+        self._require_spreadsheet()
+        return self._execute(
+            self._sheets.values().update(
+                spreadsheetId=self.spreadsheet_id,
+                range=f"'{sheet_name}'!{range_spec}",
+                valueInputOption="RAW" if raw else "USER_ENTERED",
+                body={"values": values},
+            )
+        )
 
     def append_rows(
         self,
@@ -240,14 +278,16 @@ class SheetsClient:
         Returns:
             API response with update details.
         """
-        result = self._sheets.values().append(
-            spreadsheetId=self.spreadsheet_id,
-            range=f"'{sheet_name}'!{start_column}:{start_column}",
-            valueInputOption="USER_ENTERED",
-            insertDataOption="INSERT_ROWS",
-            body={"values": values},
-        ).execute()
-        return result
+        self._require_spreadsheet()
+        return self._execute(
+            self._sheets.values().append(
+                spreadsheetId=self.spreadsheet_id,
+                range=f"'{sheet_name}'!{start_column}:{start_column}",
+                valueInputOption="USER_ENTERED",
+                insertDataOption="INSERT_ROWS",
+                body={"values": values},
+            )
+        )
 
     def clear_range(self, sheet_name: str, range_spec: str) -> dict[str, Any]:
         """Clear values from a range (keeps formatting).
@@ -259,11 +299,13 @@ class SheetsClient:
         Returns:
             API response.
         """
-        result = self._sheets.values().clear(
-            spreadsheetId=self.spreadsheet_id,
-            range=f"'{sheet_name}'!{range_spec}",
-        ).execute()
-        return result
+        self._require_spreadsheet()
+        return self._execute(
+            self._sheets.values().clear(
+                spreadsheetId=self.spreadsheet_id,
+                range=f"'{sheet_name}'!{range_spec}",
+            )
+        )
 
     # ─────────────────────────────────────────────────────────────────────────
     # Batch operations
@@ -281,11 +323,13 @@ class SheetsClient:
         Returns:
             API response.
         """
-        result = self._sheets.batchUpdate(
-            spreadsheetId=self.spreadsheet_id,
-            body={"requests": requests},
-        ).execute()
-        return result
+        self._require_spreadsheet()
+        return self._execute(
+            self._sheets.batchUpdate(
+                spreadsheetId=self.spreadsheet_id,
+                body={"requests": requests},
+            )
+        )
 
     # ─────────────────────────────────────────────────────────────────────────
     # Formatting helpers

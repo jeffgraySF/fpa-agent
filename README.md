@@ -10,7 +10,10 @@ An AI agent that can build, read, analyze, and modify financial planning spreads
 - **Inspecting** sheet structure and formula patterns
 - **Auditing** for errors and FP&A best practices
 - **Explaining** how complex formulas work
-- **Modifying** sheets with proper validation
+- **Modifying** sheets with plan-mode approval before any writes
+- **Scenario analysis** without touching the sheet
+- **Breakeven analysis** across revenue lines
+- **Snapshot & diff** to track model changes over time
 
 ## Available Commands
 
@@ -20,8 +23,13 @@ An AI agent that can build, read, analyze, and modify financial planning spreads
 | `/create` | Build a full FP&A model from input data |
 | `/inspect` | Analyze sheet structure (formulas, refs, errors) |
 | `/audit` | Check for errors and FP&A best practices |
+| `/scan` | Full formula scan — every cell, not just a sample |
 | `/explain` | Trace and explain how a cell's value is calculated |
-| `/modify` | Make changes to sheets with validation |
+| `/modify` | Make changes to sheets with plan-mode approval |
+| `/scenario` | Run a what-if analysis without modifying the sheet |
+| `/breakeven` | Find the month CAC-adjusted GM crosses a threshold |
+| `/snapshot` | Save current model outputs as a named snapshot |
+| `/diff` | Compare two snapshots to see what changed |
 
 ## Setup
 
@@ -95,14 +103,27 @@ You'll see the welcome message with available commands.
 # Audit for errors and best practices
 /audit Quarterly Summary
 
+# Full formula scan (every cell)
+/scan Revenue Build
+
 # Explain a formula
 /explain Monthly!B15
 
 # Build a model from raw data
 /create ARR in "Deals" sheet, headcount in "Team" sheet, expenses in "Budget" sheet
 
-# Modify a sheet
+# Modify a sheet (shows plan + asks for approval before writing)
 /modify add a new department row for "Product" below Engineering
+
+# What-if analysis without touching the sheet
+/scenario EHR AI CAC halved, breakeven at $200k
+
+# Find breakeven month(s)
+/breakeven $100k $175k $250k
+
+# Save a snapshot, then compare after changes
+/snapshot base case
+/diff
 ```
 
 ## Project Structure
@@ -113,18 +134,26 @@ fpa-agent/
 ├── credentials.json       # Google OAuth client ID (you create this)
 ├── requirements.txt       # Python dependencies
 ├── src/
-│   └── sheets/
-│       ├── client.py      # Google Sheets API wrapper
-│       ├── auth.py        # OAuth handling
-│       └── url.py         # URL parsing utilities
+│   ├── sheets/
+│   │   ├── client.py      # Google Sheets API wrapper (with caching + retry)
+│   │   ├── auth.py        # OAuth handling
+│   │   └── url.py         # URL parsing utilities
+│   └── analysis/
+│       ├── scan.py        # Full formula scan and anomaly detection
+│       └── snapshot.py    # Model snapshot and diff utilities
 └── .claude/
     └── commands/          # Slash command definitions
         ├── audit.md
+        ├── breakeven.md
         ├── connect.md
         ├── create.md
+        ├── diff.md
         ├── explain.md
         ├── inspect.md
-        └── modify.md
+        ├── modify.md
+        ├── scan.md
+        ├── scenario.md
+        └── snapshot.md
 ```
 
 ## Configuration

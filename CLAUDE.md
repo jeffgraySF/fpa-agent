@@ -9,18 +9,23 @@ When a user starts a new conversation (their first message is a greeting like "h
 FP&A Agent - Google Sheets automation for financial planning
 
 Available commands:
-  /connect  - Connect to a spreadsheet
-  /create   - Build a full FP&A model from input data
-  /inspect  - Inspect sheet structure and data
-  /modify   - Modify sheet formulas or data
-  /explain  - Explain a formula
-  /audit    - Audit sheet for errors or issues
+  /connect    - Connect to a spreadsheet
+  /create     - Build a full FP&A model from input data
+  /inspect    - Inspect sheet structure and data
+  /modify     - Modify sheet formulas or data
+  /explain    - Explain a formula
+  /audit      - Audit sheet for errors or issues
+  /scan       - Full formula scan (every cell, not just a sample)
+  /scenario   - What-if analysis without modifying the sheet
+  /breakeven  - Find the month CAC-adjusted GM crosses a threshold
+  /snapshot   - Save current model outputs as a named snapshot
+  /diff       - Compare two snapshots to see what changed
 
 Type a command or describe what you'd like to do.
 ```
 
 ## Skill Auto-Invocation
-When the user asks to make changes to a sheet (write formulas, update data, fix errors, add rows/columns), automatically invoke the `/modify` skill before proceeding — don't wait for the user to ask. Similarly, invoke `/inspect` when exploring structure and `/audit` when checking for errors.
+When the user asks to make changes to a sheet (write formulas, update data, fix errors, add rows/columns), automatically invoke the `/modify` skill before proceeding — don't wait for the user to ask. Similarly, invoke `/inspect` when exploring structure, `/audit` when checking for errors, `/scan` when doing a deep formula integrity check, `/scenario` when asked about what-if changes, `/breakeven` when asked about breakeven timing, and `/snapshot` + `/diff` when the user wants to track or compare model state across changes.
 
 ## Quick Reference
 - Credentials: `~/.fpa-agent/token.json` (OAuth), `./credentials.json` (client ID)
@@ -151,42 +156,39 @@ Determine which checks are relevant by tracing what the modified sheet feeds int
 1. Run `/inspect [modified sheet] refs` to find which other sheets reference it
 2. Follow the chain downstream: if Sheet A feeds Sheet B which feeds Cash Flow, a change to A affects cash
 3. Map the downstream impact to check categories:
-   - Feeds into anything that calculates **headcount totals** → check HC
    - Feeds into anything that calculates **ARR/MRR** → check ARR
-   - Feeds into anything that calculates **cash balances** → check Cash
-   - Feeds into anything that calculates **revenue** → check Revenue
+   - Feeds into anything that calculates **revenue or COGS** → check GP
+   - Feeds into anything that calculates **cash balances** → check Ending Cash
 4. If the modified sheet is a downstream endpoint (nothing references it), skip reconciliation
 
 **Standard model example** (for reference — actual models may differ):
 
 | Sheet | Typically affects |
 |---|---|
-| Headcount Input | HC, Cash |
-| ARR | ARR, Cash |
-| Services | Revenue, Cash |
-| OpEx Assumptions | Cash |
-| Costs by Department | Cash |
-| Cash Flow | Cash |
+| ARR | ARR, Ending Cash |
+| Revenue / Services | GP, Ending Cash |
+| COGS / Cost of Revenue | GP, Ending Cash |
+| OpEx Assumptions | Ending Cash |
+| Costs by Department | Ending Cash |
+| Cash Flow | Ending Cash |
 | Monthly / Quarterly Summary | Nothing (endpoint) |
 
 ### Check Definitions
 
 Each check compares a model output to a known input value. To run a check, first find the relevant cells by inspecting the actual sheet structure — don't assume specific row numbers or sheet names.
 
-**Cash**: Find the sheet/row that calculates ending cash balance. If a known cash balance exists (e.g., from a balance sheet or user-provided value), compare the model's value for that date. If they don't match, trace the discrepancy through the dependency chain.
-
-**Headcount**: Find the sheet/row that calculates total headcount. Compare to the count of active employees in the input data for the same period. "Active" means: start date before the period end, and no end date (or end date after the period). Note: the model's HC formula may exclude certain rows (e.g., $0 comp placeholders) — understand how the formula counts before flagging a mismatch.
-
 **ARR**: Find the sheet/row that calculates total ARR. Compare to the sum of active ARR records from the input data for the same month.
 
-**Revenue**: If actual revenue data exists (e.g., from a P&L or accounting system), find the model's revenue row and compare to actuals for overlapping periods.
+**GP (Gross Profit)**: Find the sheet/row that calculates gross profit (Revenue − COGS). If actuals exist, compare to actuals for overlapping periods. If no actuals, verify the formula correctly equals Revenue − COGS and that the margin % is consistent with the model assumptions.
+
+**Ending Cash**: Find the sheet/row that calculates ending cash balance. If a known cash balance exists (e.g., from a balance sheet or user-provided value), compare the model's value for that date. If they don't match, trace the discrepancy through the dependency chain.
 
 ### Report Format
 ```
 ## Reconciliation ([tier])
-- Cash ($[date]): Model $[X] vs. Input $[Y] — [MATCH / MISMATCH by $Z]
-- Headcount ([month]): Model [N] vs. Input [M] — [MATCH / MISMATCH]
-- ARR ([month]): Model $[X] vs. Input $[Y] — [MATCH / MISMATCH]
+- ARR ([month]): Model $[X] vs. Input $[Y] — [MATCH / MISMATCH by $Z]
+- GP ([month]): Model $[X] ($[margin]% margin) vs. Expected $[Y] — [MATCH / MISMATCH by $Z]
+- Ending Cash ([date]): Model $[X] vs. Input $[Y] — [MATCH / MISMATCH by $Z]
 ```
 
 ## When to Read Docs

@@ -26,7 +26,46 @@ Parse what the user wants:
 - **Delete**: Remove rows, columns, or data (requires explicit confirmation)
 - **Restructure**: Move or reorganize existing content
 
-### 2. Read the ENTIRE Sheet Before Modifying
+### 2. Scope Check
+
+Run this **before reading the sheet**. The goal is to catch vague requests on large sheets before burning 10+ API calls on discovery.
+
+**Step 1** — Get sheet size (one fast call, cached):
+```python
+from src.sheets.client import SheetsClient
+client = SheetsClient('<spreadsheet_id>')
+info = client.get_spreadsheet_info()
+sheet = next(s for s in info["sheets"] if s["name"] == "<sheet_name>", None)
+data_cells = sheet["row_count"] * min(sheet["column_count"], 35) if sheet else 0
+```
+
+**Step 2** — Classify the request:
+
+| Request type | Examples | Check needed? |
+|---|---|---|
+| Specific cell or range | "fix B5", "update C12:C20", "row 45" | No — proceed directly |
+| Named row with clear label | "the EHR AI CAC row", "the date header row" | No — proceed directly |
+| Section-level, sheet is small (≤1,000 data cells) | any | No — proceed directly |
+| Section-level, sheet is large (>1,000 data cells) | "fix the EHR formulas", "update the revenue section" | **Yes — ask** |
+| Whole-sheet or vague | "fix the formulas", "clean up this sheet" | **Yes — ask** |
+| Multi-sheet cascade | any change that touches 3+ sheets | **Yes — ask** |
+
+**Step 3** — If a check is needed, respond before reading anything:
+
+```
+To make this change efficiently, it helps to know:
+  - Which row(s) or range? (e.g., "row 45" or "B45:AE45")
+  - Do you know the current formula, or should I look it up? (adds ~10s)
+  - Which sheet, if not [inferred sheet]?
+
+Or I can inspect first and propose a plan — that takes ~20–30s total.
+
+Narrow the scope, or proceed with full discovery?
+```
+
+If the request is already specific, skip this step entirely and go straight to reading.
+
+### 3. Read the Sheet Before Modifying
 
 CRITICAL: Read ALL values and formulas for the entire sheet, not just the rows you plan to change. `write_range` overwrites whatever is in the target cells — if you only read rows 14-16 and write to rows 14-21, you will silently destroy rows 17-21 without knowing what was there.
 
@@ -48,9 +87,9 @@ For row additions, also read:
 - Formulas in adjacent rows to understand the pattern
 - Column headers to understand what each column needs
 
-### 3. Plan the Changes
+### 4. Plan the Changes
 
-Before executing, create a clear plan:
+Before executing, create a clear plan. **Show the exact formulas that will be written** — not intent summaries. The user needs to be able to spot errors before they're committed.
 
 ```
 ## Modification Plan
@@ -59,16 +98,14 @@ Before executing, create a clear plan:
 **Action**: [Add/Update/Fix/Delete]
 
 **Current state**:
-[What exists now]
+[What exists now — show the actual current formula or value for each cell being changed]
 
 **Proposed changes**:
-1. [Specific change 1]
-2. [Specific change 2]
-
-**Formulas to apply**:
-- Column B: [formula]
-- Column C: [formula]
-...
+| Cell | Before | After |
+|------|--------|-------|
+| B10  | =SUM(B3:B8) | =SUM(B3:B9) |
+| C10  | =SUM(C3:C8) | =SUM(C3:C9) |
+| ...  | ...         | ...         |
 
 **Cross-sheet impact**:
 - [Any sheets that reference this area]
@@ -79,7 +116,20 @@ Before executing, create a clear plan:
 - [These will be verified after modification]
 ```
 
-### 4. Common Modification Patterns
+#### Approval Gate
+
+After presenting the plan, decide whether to proceed immediately or wait:
+
+- **Specific / targeted** (single cell, named row, small fix): proceed directly — no pause needed.
+- **Section-level on a large sheet, vague request, or multi-sheet change**: stop after presenting the plan and ask:
+
+  ```
+  Ready to execute [N] changes across [range]. Proceed?
+  ```
+
+  Wait for the user to confirm (e.g. "yes", "go", "looks good") before writing anything. If the user asks to skip or modify part of the plan, adjust and re-present before executing.
+
+### 5. Common Modification Patterns
 
 **Adding rows to a section (e.g., new department, splitting a line item)**:
 - Use `insertDimension` via `batch_update()` to insert blank rows first — this pushes existing rows down and preserves their formulas. Never overwrite rows below the insertion point.
@@ -121,7 +171,7 @@ client.batch_update([{
 - Test the new formula on one cell first
 - Apply to all cells once verified
 
-### 5. Execute Changes
+### 6. Execute Changes
 
 Use SheetsClient methods:
 - `write_range()` for updating values/formulas
@@ -137,7 +187,7 @@ Follow the **Data Type Rules** and **Number Formatting** standards from CLAUDE.m
 
 **Column letter generation**: When building formulas programmatically across many columns, use `client._col_index_to_letter(index)` (0-based) to convert column indices to letters. Do NOT use `chr()` arithmetic — it breaks past column Z (index 25) because `chr(90+1)` is `[`, not `AA`.
 
-### 6. Verify After Changes
+### 7. Verify After Changes
 
 After making changes:
 
@@ -160,7 +210,7 @@ After making changes:
 - Clear formatting from deleted column positions
 - Update formatting on remaining columns if needed (e.g., remove shading from quarterly columns that inherited annual column formatting)
 
-### 7. Post-Modification Integrity Checks
+### 8. Post-Modification Integrity Checks
 
 After verification, run a focused integrity check on the modified sheet. This is NOT a full audit — skip FP&A assessments, missing KPI suggestions, and industry benchmark analysis. Only check for issues that indicate the modification broke something:
 
@@ -174,7 +224,7 @@ Do NOT:
 - Flag pre-existing issues unrelated to the change
 - Run `/audit` (the user can run that separately if they want a full review)
 
-### 8. Reconciliation
+### 9. Reconciliation
 
 Run the **Reconciliation Checks** from CLAUDE.md using the appropriate tier:
 
@@ -184,7 +234,7 @@ Run the **Reconciliation Checks** from CLAUDE.md using the appropriate tier:
 
 Use the dependency table in CLAUDE.md to determine which checks (HC, ARR, Cash, Revenue) apply based on the sheet you modified.
 
-### 9. Output Format
+### 10. Output Format
 
 ```
 ## Modification Complete

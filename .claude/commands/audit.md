@@ -11,12 +11,62 @@ $ARGUMENTS - Sheet name to audit, or "all" for entire spreadsheet
 
 ## Instructions
 
-### 1. Connect and Read Structure
+### 1. Complexity Check
+
+Run this **before reading any sheet data**.
+
+```python
+from src.sheets.client import SheetsClient
+client = SheetsClient('<spreadsheet_id>')
+info = client.get_spreadsheet_info()
+```
+
+**For a single sheet:**
+```python
+sheet = next(s for s in info["sheets"] if s["name"] == "<sheet_name>")
+data_cells = sheet["row_count"] * min(sheet["column_count"], 35)
+```
+
+| Condition | Approx. time | Warn? |
+|---|---|---|
+| data_cells ≤ 1,000 | 15–25s | No — proceed |
+| data_cells > 1,000 | 30–60s, 20+ API calls | **Yes** |
+
+If warning needed, respond **before reading anything**:
+
+```
+[Sheet] is [R] rows × [C] cols (~[N] data cells). A full audit will take ~[X] seconds.
+
+Faster options:
+  /scan [sheet]      (~10–15s)  formula errors and pattern breaks only, no FP&A assessment
+  /audit [sheet]               proceed with full audit (~[X]s)
+
+Which would you prefer?
+```
+
+Wait for a response before proceeding.
+
+**For `all` mode:**
+List every sheet with its size, estimate total time (~25s per sheet), and confirm before starting:
+
+```
+Auditing all [N] sheets will take approximately [X] minutes.
+
+Sheets:
+  Revenue Build    96 rows × 35 cols  (~35s)
+  Summary         45 rows × 26 cols  (~20s)
+  ...
+  Total estimated: ~[X] min
+
+Proceed with all sheets, or name the ones to audit?
+```
+
+### 2. Connect and Read Structure
 - Connect to the spreadsheet
 - Read all values and formulas from the sheet
 - Identify: row labels (column A), headers, time periods covered
 
-### 2. Determine Sheet Purpose
+### 3. Determine Sheet Purpose
 Analyze and summarize:
 - Sheet type: P&L, balance sheet, summary, data input, assumptions, ARR waterfall, etc.
 - Time granularity: monthly, quarterly, annual
@@ -24,7 +74,7 @@ Analyze and summarize:
 - Source sheets it pulls from
 - One-sentence summary of its role in the model
 
-### 3. Check for Formula Issues
+### 4. Check for Formula Issues
 
 **Errors**: Scan all cells for #REF!, #VALUE!, #NAME?, #DIV/0!, #ERROR!, #N/A
 
@@ -41,7 +91,7 @@ Analyze and summarize:
 **Missing calculations**: Rows that should have formulas but are empty/static
 - Example: Churn row with no formula when it should = Starting ARR + Bookings - Ending ARR
 
-### 4. FP&A Assessment
+### 5. FP&A Assessment
 
 Evaluate based on the sheet's purpose:
 
@@ -86,7 +136,7 @@ For cash/balance sheets, check for:
 - Comparative periods
 - Metrics appropriate for the sheet's audience
 
-### 5. Output Format
+### 6. Output Format
 
 ```
 ## AUDIT REPORT: [Sheet Name]
@@ -130,7 +180,7 @@ For cash/balance sheets, check for:
 **Bottom line**: [One sentence overall assessment]
 ```
 
-### 6. Actionable Fix Commands
+### 7. Actionable Fix Commands
 
 For every issue found, include a ready-to-run `/modify` command that would fix it. This lets the user copy-paste the command directly to resolve issues.
 

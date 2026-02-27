@@ -46,3 +46,6 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
+
+# Client data - never commit
+*.txt
