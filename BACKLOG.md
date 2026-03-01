@@ -28,6 +28,26 @@ Root cause: something in `SheetsClient.__init__` or `set_spreadsheet()` requires
 
 ---
 
+## Features
+
+### Conditional formatting support
+**Effort**: 2–3 hrs
+**Enables**: Apply traffic-light colors, variance highlighting, and heat maps via `/modify` and `/create`
+
+The Sheets API supports `addConditionalFormatRule` in `batch_update`. Common FP&A use cases:
+- **Variance columns**: Green/red based on actual vs. plan (e.g., `>0` = green, `<0` = red)
+- **Actuals vs. forecast**: Shade past months differently from projected months
+- **Heat maps**: CAC payback by cohort, burn rate trends
+- **Error highlighting**: Auto-flag #REF!, #DIV/0! cells in red
+
+Implementation notes:
+- Rules take a `BooleanCondition` (e.g., `NUMBER_GREATER`, `NUMBER_LESS`) or `GradientRule`
+- Color is set via `color` object (RGB 0–1 scale)
+- Rules are ordered — first match wins
+- Should be exposed as natural language in `/modify`: "highlight variances in column D red/green"
+
+---
+
 ## Accuracy / Robustness
 
 ### Build `src/analysis/revenue_model.py`

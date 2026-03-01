@@ -221,6 +221,17 @@ client.batch_update([{
 }])
 ```
 
+**Batch computation pattern** — for new sections spanning many rows and columns (e.g., 10 rows × 25 months):
+1. Read all source data in **one call** upfront (source sheet inputs, date headers, etc.)
+2. Build all formula strings in Python arrays — compute every row's formulas before writing anything
+3. Write each row in one call (`G{row}:AE{row}`)
+4. Do **not** read back intermediate results to verify — trust the formula logic
+5. One final read at the end to spot-check and compare to the match target
+
+This avoids the read → write → verify → fix loop that doubles API calls and token usage.
+
+---
+
 **Test Before Bulk Write** — for complex formulas (proration, SUMPRODUCT, nested IF):
 1. Write the formula to a single cell (first data row, first month column)
 2. Read back the calculated value

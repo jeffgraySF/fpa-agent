@@ -71,6 +71,16 @@ Client data stays in the session — it never goes into project files.
 - **Discretionary decisions**: Read `template_specs.md` when you have flexibility on structure
 - **After structural changes**: Update `template_specs.md`
 
+## Building New Sections from Scratch
+
+Before reading the sheet or writing any formulas, ask these questions in a single message:
+
+1. **What drives the output values?** Formulas from inputs (unit × ASP, growth rate compounding), pulled from another sheet, or manual user entry per month?
+2. **Are there sub-items that can't share the same unit economics?** E.g., two product lines with different ASPs that can't be combined into one unit count.
+3. **Should the output tie to a reference sheet?** If so, which sheet and which rows — so we can verify the match before considering the work done.
+
+Get answers before touching the sheet. Discovering these mid-execution causes rework and wastes tokens.
+
 ## Skill Design Principles
 
 When modifying or creating skills, optimize for speed and token efficiency:

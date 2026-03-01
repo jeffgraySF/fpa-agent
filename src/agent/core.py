@@ -8,18 +8,15 @@ from typing import Any
 import anthropic
 from dotenv import load_dotenv
 
-from googleapiclient.discovery import build
-
 from src.sheets import SheetsClient
-from src.sheets.auth import clear_credentials, get_credentials, show_auth_status
+from src.sheets.auth import clear_credentials, show_auth_status
 from src.tools import TOOLS, execute_tool
 
 # Load environment variables from .env file
 load_dotenv()
 
-# Load the instructions and specs to include in the system prompt
+# Load the template specs to include in the system prompt
 REPO_ROOT = Path(__file__).parent.parent.parent
-INSTRUCTIONS = (REPO_ROOT / "INSTRUCTIONS.md").read_text()
 TEMPLATE_SPECS = (REPO_ROOT / "template_specs.md").read_text()
 
 SYSTEM_PROMPT = f"""You are an FP&A (Financial Planning & Analysis) assistant that helps users work with their Google Sheets financial models.
@@ -61,9 +58,6 @@ Only proceed with modifications once the user confirms you understand the model 
 
 The following describes an ideal FP&A model structure. User models may differ - your job is to understand THEIR model, not force it to match this template. Use this as context for what good FP&A models typically contain.
 
-### Formula Best Practices
-{INSTRUCTIONS}
-
 ### Example Template Structure
 {TEMPLATE_SPECS}
 
@@ -88,15 +82,8 @@ class Agent:
                            If not provided, user can connect via chat.
         """
         self.client = anthropic.Anthropic()
-        # Allow starting without a spreadsheet - user can connect via chat
-        try:
-            self.sheets = SheetsClient(spreadsheet_id)
-        except ValueError:
-            # No spreadsheet configured - that's OK, user will provide one
-            self.sheets = SheetsClient.__new__(SheetsClient)
-            self.sheets.spreadsheet_id = None
-            creds = get_credentials()
-            self.sheets._service = build("sheets", "v4", credentials=creds)
+        # SheetsClient handles None gracefully; user can connect via chat later
+        self.sheets = SheetsClient(spreadsheet_id)
 
         self.messages: list[dict[str, Any]] = []
         self.model = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-20250514")

@@ -57,7 +57,7 @@ npm install -g @anthropic-ai/claude-code
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -e .
 ```
 
 ### 4. Set up Google Sheets credentials
@@ -131,8 +131,8 @@ You'll see the welcome message with available commands.
 ```
 fpa-agent/
 ├── CLAUDE.md              # Agent instructions (read by Claude Code)
+├── pyproject.toml         # Python dependencies
 ├── credentials.json       # Google OAuth client ID (you create this)
-├── requirements.txt       # Python dependencies
 ├── src/
 │   ├── sheets/
 │   │   ├── client.py      # Google Sheets API wrapper (with caching + retry)
