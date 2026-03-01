@@ -52,6 +52,22 @@ Client data stays in the session — it never goes into project files.
 - Use `/connect <url>` to connect to a spreadsheet
 - Google Sheets API: 300 requests/minute per project, 60/minute per user — each `batch_update` counts as one request regardless of operations, so batch aggressively
 
+### SheetsClient Usage
+```python
+# Connect — use set_spreadsheet(), not client.service (doesn't exist)
+client = SheetsClient()
+info = client.set_spreadsheet(url_or_id)  # returns spreadsheet metadata
+
+# Read — always read a full range, then iterate in Python
+# Never loop calling read_range() per cell — burns the 60 reads/min quota fast
+vals = client.read_range(sheet, "A1:G25")
+fmls = client.read_formulas(sheet, "A1:G25")
+
+# Type safety — cell values can be int, float, or str
+# Always coerce before calling string methods
+is_formula = str(cell).startswith("=")
+```
+
 ## Formula Standards
 - **No hardcoded labels**: Use `$A{row}` not `"G&A"` or `"Sales"` — reference the row label cell
 - **Skip headers in ranges**: Use `$B$2:$B$100` not `$B:$B` — avoid including header rows in calculations
