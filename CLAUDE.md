@@ -46,6 +46,12 @@ Client data stays in the session — it never goes into project files.
 
 **When updating project files mid-session:** scan your proposed changes for anything you read from a spreadsheet this session before writing. If a client term appears, replace it with a generic placeholder.
 
+**Before every commit:** run this grep against all staged files using the names and terms you actually saw in the session (spreadsheet title, product lines, company names, sheet names):
+```bash
+git diff --cached --name-only | xargs grep -li "<term1>\|<term2>"
+```
+Do this even if you're confident nothing leaked — the grep is the check, not your confidence.
+
 ## Quick Reference
 - Credentials: `~/.fpa-agent/token.json` (OAuth), `./credentials.json` (client ID)
 - Python env: `.venv` with google-api-python-client

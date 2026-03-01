@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Pre-commit hook: block client data from being committed to project files.
+# Install: git config core.hooksPath .githooks
+
+set -euo pipefail
+
+# Pattern: real Google Sheets URLs (not placeholders like <spreadsheet_id>)
+SHEETS_URL_RE='docs\.google\.com/spreadsheets/d/[A-Za-z0-9_-]{20,}'
+
+# Files in scope: all staged .md and .py files
+STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(md|py)$' || true)
+
+if [ -z "$STAGED" ]; then
+  exit 0
+fi
+
+FOUND=0
+for file in $STAGED; do
+  if grep -Eq "$SHEETS_URL_RE" "$file" 2>/dev/null; then
+    echo "BLOCKED: real Google Sheets URL found in $file"
+    echo "  Replace with a generic placeholder before committing."
+    grep -En "$SHEETS_URL_RE" "$file" | head -5
+    FOUND=1
+  fi
+done
+
+if [ "$FOUND" -eq 1 ]; then
+  echo ""
+  echo "Commit blocked. Remove client spreadsheet URLs from the files above."
+  exit 1
+fi

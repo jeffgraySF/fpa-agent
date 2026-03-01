@@ -55,7 +55,12 @@ def test_no_phantom_commands_in_welcome():
 _SHEETS_URL_RE = re.compile(r"docs\.google\.com/spreadsheets/d/[A-Za-z0-9_-]{20,}")
 
 # Files that should never contain real spreadsheet URLs
-_PROTECTED_FILES = list(ROOT.glob("*.md")) + list(COMMANDS_DIR.glob("*.md"))
+_PROTECTED_FILES = (
+    list(ROOT.glob("*.md"))
+    + list(COMMANDS_DIR.glob("*.md"))
+    + list((ROOT / "src").rglob("*.py"))
+    + list((ROOT / "tests").rglob("*.py"))
+)
 
 
 def test_no_client_spreadsheet_urls_in_project_files():
