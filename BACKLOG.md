@@ -13,7 +13,7 @@ Improvements not yet implemented. Ordered roughly by value / effort ratio.
 After a skill parses the Revenue Build structure (month columns, output row indices per business line), it should print the row map explicitly in its output so the context check in later calls can actually use it:
 
 ```
-Structure (Revenue Build): months G–AE (Dec'25–Dec'27) | Revenue rows: Consumer PGx=12, Consumer AI=24, ... | COGS: 9, 21, ... | CAC: 10, 22, ...
+Structure (Revenue Build): months G–AE (Jan'26–Dec'27) | Revenue rows: Enterprise=12, SMB=24, ... | COGS: 9, 21, ... | CAC: 10, 22, ...
 ```
 
 Right now the context check says "skip re-discovery if structure is known" but nothing saves the structure to context in a reusable format.

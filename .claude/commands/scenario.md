@@ -12,7 +12,7 @@ $ARGUMENTS - Parameter change(s) and an optional comparison lens
 Examples:
 - `/scenario Enterprise CAC = $150`
 - `/scenario Enterprise initial units = 3`
-- `/scenario raise Consumer AI price to $10`
+- `/scenario raise SMB price to $10`
 - `/scenario Professional Services adds a second deal in Nov-26`
 - `/scenario Enterprise CAC halved, how does that affect breakeven?`
 - `/scenario double SMB growth rate, what's the revenue impact by Dec-27?`
