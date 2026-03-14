@@ -2,6 +2,12 @@
 
 Google Sheets automation for financial planning using Claude Code. Designed for early-stage SaaS companies.
 
+## Interface
+
+The primary interface is **Claude Code** with slash commands (e.g. `/modify`, `/inspect`). This is the recommended way to use the project.
+
+A standalone CLI agent (`src/agent/`) is also included for reference — it exposes similar capabilities as a terminal chatbot using the Claude API directly, without Claude Code.
+
 ## What It Does
 
 An AI agent that can build, read, analyze, and modify financial planning spreadsheets. Built for FP&A workflows like:
@@ -138,9 +144,13 @@ fpa-agent/
 │   │   ├── client.py      # Google Sheets API wrapper (with caching + retry)
 │   │   ├── auth.py        # OAuth handling
 │   │   └── url.py         # URL parsing utilities
-│   └── analysis/
-│       ├── scan.py        # Full formula scan and anomaly detection
-│       └── snapshot.py    # Model snapshot and diff utilities
+│   ├── analysis/
+│   │   ├── scan.py        # Full formula scan and anomaly detection
+│   │   └── snapshot.py    # Model snapshot and diff utilities
+│   ├── agent/
+│   │   └── core.py        # Standalone CLI agent (alternative interface)
+│   └── tools/
+│       └── ...            # Tool definitions used by the CLI agent
 └── .claude/
     └── commands/          # Slash command definitions
         ├── audit.md
