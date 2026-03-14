@@ -166,32 +166,6 @@ fpa-agent/
         └── snapshot.md
 ```
 
-## Configuration
-
-### Local settings (not committed)
-
-Create `.claude/settings.local.json` to auto-approve common tools:
-
-```json
-{
-  "permissions": {
-    "allow": [
-      "Bash(python3:*)",
-      "Bash(git status:*)",
-      "Bash(git diff:*)",
-      "Bash(git log:*)",
-      "Read",
-      "Write",
-      "Edit",
-      "Glob",
-      "Grep"
-    ]
-  }
-}
-```
-
-Note: `git push` is intentionally not auto-approved.
-
 ## Troubleshooting
 
 ### "Unable to parse range" error
