@@ -120,3 +120,5 @@ After making changes, check if `README.md` needs updating. Update it when:
 - User-facing behavior changes significantly
 
 Don't update README for internal-only changes (formula tweaks, prompt wording, bug fixes).
+
+Also consider adding to the **Troubleshooting** section when a change is likely to surface a new failure mode for users — for example, a new auth step, a new required file, or a new error a user might hit on first setup. Don't add entries for errors that are already covered, unlikely, or only relevant to developers.
