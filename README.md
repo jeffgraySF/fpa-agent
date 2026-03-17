@@ -43,6 +43,7 @@ An AI agent that can build, read, analyze, and modify financial planning spreads
 
 - Python 3.11+
 - Node.js 18+
+- An Anthropic account (Claude Pro/Team subscription, or API key)
 - A Google Cloud project with Sheets API enabled
 
 ### 1. Clone the repo
@@ -52,10 +53,13 @@ git clone https://github.com/jeffgraySF/fpa-agent.git
 cd fpa-agent
 ```
 
-### 2. Install Claude Code
+### 2. Install and authenticate Claude Code
+
+Follow the [Claude Code setup guide](https://docs.anthropic.com/en/docs/claude-code/setup) to install and authenticate. The short version:
 
 ```bash
 npm install -g @anthropic-ai/claude-code
+claude  # opens browser login if you have a Claude subscription, or set ANTHROPIC_API_KEY first
 ```
 
 ### 3. Set up Python environment
@@ -68,29 +72,40 @@ pip install -e .
 
 ### 4. Set up Google Sheets credentials
 
-You need OAuth credentials to access Google Sheets.
+You need OAuth credentials to allow the agent to read and write your spreadsheets. `credentials.json` is gitignored — it stays on your machine and is never committed.
 
-#### Create credentials:
+#### 4a. Create a Google Cloud project and enable the API
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com)
-2. Create a new project (or use existing)
+2. Create a new project (or select an existing one)
 3. Enable the **Google Sheets API**:
-   - Go to APIs & Services > Library
-   - Search for "Google Sheets API"
-   - Click Enable
-4. Create OAuth credentials:
-   - Go to APIs & Services > Credentials
-   - Click "Create Credentials" > "OAuth client ID"
-   - Choose "Desktop app"
-   - Download the JSON file
-5. Save as `credentials.json` in the repo root
+   - APIs & Services > Library > search "Google Sheets API" > Enable
 
-#### First-time authentication:
+#### 4b. Configure the OAuth consent screen
 
-When you first run a command that accesses Sheets, you'll be prompted to authenticate in your browser. The token is saved to `~/.fpa-agent/token.json`.
+1. Go to **APIs & Services > OAuth consent screen**
+2. Choose **External** and click Create
+3. Fill in the required fields (app name, support email) — the values don't matter for personal use
+4. On the **Test users** step, add your own Google email address
+5. Save and continue through the remaining steps
+
+> This step is required. Without it, the browser auth will fail with an "access blocked" error.
+
+#### 4c. Create OAuth credentials
+
+1. Go to **APIs & Services > Credentials**
+2. Click **Create Credentials > OAuth client ID**
+3. Choose **Desktop app**, give it any name
+4. Click Create, then **Download JSON**
+5. Save the downloaded file as `credentials.json` in the repo root
+
+#### 4d. First-time authentication
+
+When you first run a command that accesses Sheets, a browser window will open asking you to sign in and grant access. After you approve, the token is saved to `~/.fpa-agent/token.json` — you won't be prompted again unless the token expires.
 
 ### 5. Run Claude Code
 
+From the repo root:
 ```bash
 claude
 ```
@@ -168,14 +183,23 @@ fpa-agent/
 
 ## Troubleshooting
 
-### "Unable to parse range" error
-The sheet name may have changed or doesn't exist. Use `/connect` to see available sheets.
+### "Access blocked" during Google sign-in
+You skipped the OAuth consent screen step. Go to Google Cloud Console > APIs & Services > OAuth consent screen, set up the screen, and add your email as a test user under "Test users".
 
-### Authentication issues
-Delete `~/.fpa-agent/token.json` and re-authenticate.
+### "Unable to parse range" error
+The sheet name may have changed or doesn't exist. Use `/connect <url>` to see the available sheet tabs.
+
+### Authentication token issues
+Delete `~/.fpa-agent/token.json` and run any command again to re-authenticate.
 
 ### "No spreadsheet connected" error
-Run `/connect <url>` first, or set the `SPREADSHEET_ID` environment variable.
+Run `/connect <url>` at the start of each session. The connection doesn't persist between Claude Code sessions.
+
+### `credentials.json` not found
+Make sure you saved the downloaded OAuth JSON file as `credentials.json` in the repo root (next to `CLAUDE.md`).
+
+### Claude Code not found
+Make sure Node.js 18+ is installed and `npm install -g @anthropic-ai/claude-code` completed without errors. Try `claude --version` to confirm.
 
 ## License
 

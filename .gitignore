@@ -2,7 +2,7 @@
 .env
 token.pickle
 token.json
-credentials.json
+credentials*.json
 *.pickle
 
 # Python
