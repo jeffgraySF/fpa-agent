@@ -5,13 +5,23 @@ model: haiku
 
 Switch to a different Google Spreadsheet.
 
-## Instructions
-
-1. Extract spreadsheet ID from the provided URL
-2. Use SheetsClient to connect and get spreadsheet info
-3. List all sheets with row/column counts
-4. Confirm connection successful
-
 ## Arguments
 
 $ARGUMENTS - Google Sheets URL or spreadsheet ID
+
+## Instructions
+
+1. Extract the URL or ID from `$ARGUMENTS`
+2. Run this Python to connect and get spreadsheet info:
+
+```python
+from src.sheets.client import SheetsClient
+client = SheetsClient()
+info = client.set_spreadsheet('$ARGUMENTS')
+print(info)
+```
+
+Run with `.venv/bin/python` from the project root.
+
+3. List all sheets with row/column counts from `info['sheets']`
+4. Confirm connection successful
